@@ -551,6 +551,179 @@ Hibernate:
 
 '뭐가 다른가요?' ~~잘봐요! 뭔지 모르겠는데 살짝 달라요~~    
 
+마치 쿼리를 짜듯이 작성도 가능하다.
+
+
+```
+
+package io.basquiat;
+
+import java.util.List;
+
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.EntityTransaction;
+import javax.persistence.Persistence;
+
+import com.querydsl.core.Tuple;
+import com.querydsl.jpa.impl.JPAQuery;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+
+import io.basquiat.model.Item;
+import io.basquiat.model.QItem;
+
+/**
+ * 
+ * created by basquiat
+ *
+ */
+public class JpaMain {
+
+    public static void main(String[] args) {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("basquiat");
+        EntityManager em = emf.createEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+        try {
+        	
+        	Item item = Item.builder().name("Fodera").price(15000000).build();
+        	Item item1 = Item.builder().name("Fender").price(2500000).build();
+        	em.persist(item);
+        	em.persist(item1);
+        	em.flush();
+        	em.clear();
+        	System.out.println("일단 DB에 날렸어~");
+
+        	JPAQueryFactory query = new JPAQueryFactory(em);
+        	QItem qItem = QItem.item;
+        	System.out.println("queryDSL로 뭔가 하기 직전!!!");
+        	JPAQuery<Tuple> names = query.select(qItem.name, qItem.price).from(qItem);
+        	System.out.println("queryDSL로 일단 조회했어~");
+        	System.out.println(names.fetch());
+
+        	tx.commit();
+        } catch(Exception e) {
+            tx.rollback();
+        } finally {
+            em.close();
+        }
+        emf.close();
+    }
+    
+}
+
+
+```
+
+이 부분을 살펴보자.    
+
+```
+
+JPAQuery<Tuple> names = query.select(qItem.name, qItem.price).from(qItem);
+
+```
+
+마치 이거랑 비슷하지 않나?
+
+```
+
+SELECT name, price FROM basquit_item;
+
+```
+tuple로 받아칠 테니 결과는 다음과 같이 나올 것이다.    
+
+튜..튜플은 뭔데?    
+
+[관계 (데이터베이스)](https://ko.wikipedia.org/wiki/%EA%B4%80%EA%B3%84_(%EB%8D%B0%EC%9D%B4%ED%84%B0%EB%B2%A0%EC%9D%B4%EC%8A%A4))
+
+```
+Jul 08, 2020 5:19:17 PM org.hibernate.jpa.internal.util.LogHelper logPersistenceUnitInformation
+INFO: HHH000204: Processing PersistenceUnitInfo [name: basquiat]
+Jul 08, 2020 5:19:17 PM org.hibernate.Version logVersion
+INFO: HHH000412: Hibernate ORM core version 5.4.17.Final
+Jul 08, 2020 5:19:17 PM org.hibernate.annotations.common.reflection.java.JavaReflectionManager <clinit>
+INFO: HCANN000001: Hibernate Commons Annotations {5.1.0.Final}
+Jul 08, 2020 5:19:18 PM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl configure
+WARN: HHH10001002: Using Hibernate built-in connection pool (not for production use!)
+Jul 08, 2020 5:19:18 PM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl buildCreator
+INFO: HHH10001005: using driver [com.mysql.cj.jdbc.Driver] at URL [jdbc:mysql://localhost:3306/basquiat?rewriteBatchedStatements=true&useUnicode=yes&characterEncoding=UTF-8&serverTimezone=Asia/Seoul]
+Jul 08, 2020 5:19:18 PM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl buildCreator
+INFO: HHH10001001: Connection properties: {user=basquiat, password=****}
+Jul 08, 2020 5:19:18 PM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl buildCreator
+INFO: HHH10001003: Autocommit mode: false
+Jul 08, 2020 5:19:18 PM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl$PooledConnections <init>
+INFO: HHH000115: Hibernate connection pool size: 20 (min=1)
+Jul 08, 2020 5:19:18 PM org.hibernate.dialect.Dialect <init>
+INFO: HHH000400: Using dialect: org.hibernate.dialect.MySQL5InnoDBDialect
+Hibernate: 
+    
+    drop table if exists basquiat_item
+Jul 08, 2020 5:19:18 PM org.hibernate.resource.transaction.backend.jdbc.internal.DdlTransactionIsolatorNonJtaImpl getIsolatedConnection
+INFO: HHH10001501: Connection obtained from JdbcConnectionAccess [org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator$ConnectionProviderJdbcConnectionAccess@273c947f] for (non-JTA) DDL execution was not in auto-commit mode; the Connection 'local transaction' will be committed and the Connection will be set into auto-commit mode.
+Hibernate: 
+    
+    create table basquiat_item (
+       id bigint not null auto_increment,
+        createdAt datetime,
+        it_name varchar(255),
+        it_price integer,
+        updatedAt datetime,
+        primary key (id)
+    ) engine=InnoDB
+Jul 08, 2020 5:19:18 PM org.hibernate.resource.transaction.backend.jdbc.internal.DdlTransactionIsolatorNonJtaImpl getIsolatedConnection
+INFO: HHH10001501: Connection obtained from JdbcConnectionAccess [org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator$ConnectionProviderJdbcConnectionAccess@130a0f66] for (non-JTA) DDL execution was not in auto-commit mode; the Connection 'local transaction' will be committed and the Connection will be set into auto-commit mode.
+Jul 08, 2020 5:19:18 PM org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator initiateService
+INFO: HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+Hibernate: 
+    /* insert io.basquiat.model.Item
+        */ insert 
+        into
+            basquiat_item
+            (createdAt, it_name, it_price, updatedAt) 
+        values
+            (?, ?, ?, ?)
+Hibernate: 
+    /* insert io.basquiat.model.Item
+        */ insert 
+        into
+            basquiat_item
+            (createdAt, it_name, it_price, updatedAt) 
+        values
+            (?, ?, ?, ?)
+일단 DB에 날렸어~
+queryDSL로 뭔가 하기 직전!!!
+queryDSL로 일단 조회했어~
+Hibernate: 
+    /* select
+        item.name,
+        item.price 
+    from
+        Item item */ select
+            item0_.it_name as col_0_0_,
+            item0_.it_price as col_1_0_ 
+        from
+            basquiat_item item0_
+[[Fodera, 15000000], [Fender, 2500000]]
+Jul 08, 2020 5:19:19 PM org.hibernate.engine.internal.StatisticalLoggingSessionEventListener end
+INFO: Session Metrics {
+    530238 nanoseconds spent acquiring 1 JDBC connections;
+    465305 nanoseconds spent releasing 1 JDBC connections;
+    13590152 nanoseconds spent preparing 3 JDBC statements;
+    5475007 nanoseconds spent executing 3 JDBC statements;
+    0 nanoseconds spent executing 0 JDBC batches;
+    0 nanoseconds spent performing 0 L2C puts;
+    0 nanoseconds spent performing 0 L2C hits;
+    0 nanoseconds spent performing 0 L2C misses;
+    6499116 nanoseconds spent executing 1 flushes (flushing a total of 2 entities and 0 collections);
+    35518 nanoseconds spent executing 1 partial-flushes (flushing a total of 0 entities and 0 collections)
+}
+Jul 08, 2020 5:19:19 PM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl$PoolState stop
+INFO: HHH10001008: Cleaning up connection pool [jdbc:mysql://localhost:3306/basquiat?rewriteBatchedStatements=true&useUnicode=yes&characterEncoding=UTF-8&serverTimezone=Asia/Seoul]
+
+
+```
+
+
 
 ## 저기요? 근데 이거 써야 할 장점이 안보이는데요?    
 
