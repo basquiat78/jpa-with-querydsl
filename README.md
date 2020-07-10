@@ -383,25 +383,25 @@ public class JpaMain {
 결과는?
 
 ```
-Jul 10, 2020 11:51:55 AM org.hibernate.jpa.internal.util.LogHelper logPersistenceUnitInformation
+Jul 10, 2020 5:20:52 PM org.hibernate.jpa.internal.util.LogHelper logPersistenceUnitInformation
 INFO: HHH000204: Processing PersistenceUnitInfo [name: basquiat]
-Jul 10, 2020 11:51:56 AM org.hibernate.Version logVersion
+Jul 10, 2020 5:20:52 PM org.hibernate.Version logVersion
 INFO: HHH000412: Hibernate ORM core version 5.4.17.Final
-Jul 10, 2020 11:51:56 AM org.hibernate.annotations.common.reflection.java.JavaReflectionManager <clinit>
+Jul 10, 2020 5:20:53 PM org.hibernate.annotations.common.reflection.java.JavaReflectionManager <clinit>
 INFO: HCANN000001: Hibernate Commons Annotations {5.1.0.Final}
-Jul 10, 2020 11:51:56 AM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl configure
+Jul 10, 2020 5:20:53 PM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl configure
 WARN: HHH10001002: Using Hibernate built-in connection pool (not for production use!)
-Jul 10, 2020 11:51:56 AM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl buildCreator
+Jul 10, 2020 5:20:53 PM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl buildCreator
 INFO: HHH10001005: using driver [com.mysql.cj.jdbc.Driver] at URL [jdbc:mysql://localhost:3306/basquiat?rewriteBatchedStatements=true&useUnicode=yes&characterEncoding=UTF-8&serverTimezone=Asia/Seoul]
-Jul 10, 2020 11:51:56 AM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl buildCreator
+Jul 10, 2020 5:20:53 PM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl buildCreator
 INFO: HHH10001001: Connection properties: {user=basquiat, password=****}
-Jul 10, 2020 11:51:56 AM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl buildCreator
+Jul 10, 2020 5:20:53 PM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl buildCreator
 INFO: HHH10001003: Autocommit mode: false
-Jul 10, 2020 11:51:56 AM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl$PooledConnections <init>
+Jul 10, 2020 5:20:53 PM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl$PooledConnections <init>
 INFO: HHH000115: Hibernate connection pool size: 20 (min=1)
-Jul 10, 2020 11:51:56 AM org.hibernate.dialect.Dialect <init>
+Jul 10, 2020 5:20:53 PM org.hibernate.dialect.Dialect <init>
 INFO: HHH000400: Using dialect: org.hibernate.dialect.MySQL5InnoDBDialect
-Jul 10, 2020 11:51:57 AM org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator initiateService
+Jul 10, 2020 5:20:54 PM org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator initiateService
 INFO: HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
 Hibernate: 
     /* SELECT
@@ -416,6 +416,7 @@ Hibernate:
             brand0_.updated_at as updated_5_0_ 
         from
             basquiat_brand brand0_
+======================
 Brand(code=FBASS, name=에프베이스, enName=FBass, launchedAt=2020-07-10T10:49:09, updatedAt=null)
 Hibernate: 
     select
@@ -429,10 +430,16 @@ Hibernate:
     where
         partner0_.id=?
 Partner(id=MUSICFORCE, name=뮤직포스, address=청담동 어딘가 있다., entryAt=2020-07-10T10:49:09, updatedAt=null)
+======================
+======================
 Brand(code=FENDER, name=펜더, enName=Fender, launchedAt=2020-07-10T10:49:09, updatedAt=null)
 Partner(id=MUSICFORCE, name=뮤직포스, address=청담동 어딘가 있다., entryAt=2020-07-10T10:49:09, updatedAt=null)
+======================
+======================
 Brand(code=FODERA, name=포데라, enName=Fodera, launchedAt=2020-07-10T10:49:09, updatedAt=null)
 Partner(id=MUSICFORCE, name=뮤직포스, address=청담동 어딘가 있다., entryAt=2020-07-10T10:49:09, updatedAt=null)
+======================
+======================
 Brand(code=MARLEAUX, name=말로우, enName=Marleaux, launchedAt=2020-07-10T10:49:09, updatedAt=null)
 Hibernate: 
     select
@@ -446,10 +453,15 @@ Hibernate:
     where
         partner0_.id=?
 Partner(id=RIDINBASS, name=라이딩 베이스, address=합정동 어딘가 있다., entryAt=2020-07-10T10:49:09, updatedAt=null)
+======================
+======================
 Brand(code=MATTISSON, name=매티, enName=Mattisson, launchedAt=2020-07-10T10:49:09, updatedAt=null)
 Partner(id=RIDINBASS, name=라이딩 베이스, address=합정동 어딘가 있다., entryAt=2020-07-10T10:49:09, updatedAt=null)
+======================
+======================
 Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, launchedAt=2020-07-10T10:49:09, updatedAt=null)
 Partner(id=RIDINBASS, name=라이딩 베이스, address=합정동 어딘가 있다., entryAt=2020-07-10T10:49:09, updatedAt=null)
+======================
 Hibernate: 
     /* SELECT
         partner.id,
@@ -472,22 +484,21 @@ RIDINBASS
 라이딩 베이스
 합정동 어딘가 있다.
 One Row end
-Jul 10, 2020 11:51:57 AM org.hibernate.engine.internal.StatisticalLoggingSessionEventListener end
+Jul 10, 2020 5:20:54 PM org.hibernate.engine.internal.StatisticalLoggingSessionEventListener end
 INFO: Session Metrics {
-    698855 nanoseconds spent acquiring 1 JDBC connections;
-    438452 nanoseconds spent releasing 1 JDBC connections;
-    10696643 nanoseconds spent preparing 4 JDBC statements;
-    4235843 nanoseconds spent executing 4 JDBC statements;
+    838334 nanoseconds spent acquiring 1 JDBC connections;
+    497240 nanoseconds spent releasing 1 JDBC connections;
+    9658158 nanoseconds spent preparing 4 JDBC statements;
+    3903557 nanoseconds spent executing 4 JDBC statements;
     0 nanoseconds spent executing 0 JDBC batches;
     0 nanoseconds spent performing 0 L2C puts;
     0 nanoseconds spent performing 0 L2C hits;
     0 nanoseconds spent performing 0 L2C misses;
-    1479770 nanoseconds spent executing 1 flushes (flushing a total of 8 entities and 2 collections);
-    8795948 nanoseconds spent executing 2 partial-flushes (flushing a total of 8 entities and 8 collections)
+    1696103 nanoseconds spent executing 1 flushes (flushing a total of 8 entities and 2 collections);
+    9313779 nanoseconds spent executing 2 partial-flushes (flushing a total of 8 entities and 8 collections)
 }
-Jul 10, 2020 11:51:57 AM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl$PoolState stop
+Jul 10, 2020 5:20:54 PM org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl$PoolState stop
 INFO: HHH10001008: Cleaning up connection pool [jdbc:mysql://localhost:3306/basquiat?rewriteBatchedStatements=true&useUnicode=yes&characterEncoding=UTF-8&serverTimezone=Asia/Seoul]
-
 
 ```
 
