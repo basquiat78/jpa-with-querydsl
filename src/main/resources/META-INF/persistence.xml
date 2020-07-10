@@ -17,6 +17,7 @@
             <property name="javax.persistence.jdbc.password" value="basquiat"/>
             <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/basquiat?rewriteBatchedStatements=true&amp;useUnicode=yes&amp;characterEncoding=UTF-8&amp;serverTimezone=Asia/Seoul"/>
             <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL5InnoDBDialect"/>
+            
             <!-- option configuration -->
             <!-- 콘솔에 sql 날아가는거 보여주는 옵션 -->
             <property name="hibernate.show_sql" value="true"/>
@@ -29,7 +30,7 @@
             -->
             <!-- 이 옵션에 들어가는 것은 그냥 쓰지 말자. 테스트 용도 또는 개인 토이 프로젝트를 하는게 아니라면 validate정도까지만 그게 아니면 운영은 none으로 설정하자 -->
             <!-- 실제 none이라는 옵션은 없다. 따라서 none으로 하면 아무 일도 일어나지 않는다. -->
-            <property name="hibernate.hbm2ddl.auto" value="create" />
+            <property name="hibernate.hbm2ddl.auto" value="none" />
         </properties>
     </persistence-unit>
 </persistence>
