@@ -1,5 +1,9 @@
 package io.basquiat;
 
+import static io.basquiat.model.QBrand.brand;
+
+import java.util.List;
+
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
@@ -8,8 +12,6 @@ import javax.persistence.Persistence;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import io.basquiat.model.Brand;
-import io.basquiat.model.Partner;
-import static io.basquiat.model.QBrand.*;
 
 /**
  * 
@@ -24,20 +26,42 @@ public class JpaMain {
         EntityTransaction tx = em.getTransaction();
         tx.begin();
         try {
-        	
         	JPAQueryFactory query = new JPAQueryFactory(em);
         	System.out.println("queryDSL로 뭔가 하기 직전!!!");
-        	Brand selectedBrand = query.select(brand)
-        					   .from(brand)
-        					   .where(brand.enName.eq("Marleaux"))
-        					   .fetchOne();
-			System.out.println(selectedBrand.toString());
+        	List<Brand> brandLikeList = query.select(brand)
+							       		 	 .from(brand)
+							       		 	 .where(brand.enName.like("%end"))
+							       		 	 .fetch();
+        	System.out.println("like() start");
+        	brandLikeList.stream().map(s -> s.toString())
+    				 		  	  .forEach(System.out::println);
+        	
+        	List<Brand> brandStartsWithList = query.select(brand)
+									       		   .from(brand)
+									       		   .where(brand.enName.startsWith("end"))
+									       		   .fetch();
+			System.out.println("startsWith() start");
+			brandStartsWithList.stream().map(s -> s.toString())
+					  	 				.forEach(System.out::println);
 			
-			System.out.println("Lazy Loadging, 곧 쿼리가 날아가겠지.");
-			Partner partner = selectedBrand.getPartner();
-			System.out.println(partner.toString());
+			List<Brand> brandEndsWithList = query.select(brand)
+											.from(brand)
+											.where(brand.enName.endsWith("end"))
+											.fetch();
+			System.out.println("endsWith() start");
+			brandEndsWithList.stream().map(s -> s.toString())
+									  .forEach(System.out::println);
+			
+			List<Brand> brandContainsList = query.select(brand)
+											.from(brand)
+											.where(brand.enName.contains("end"))
+											.fetch();
+			System.out.println("contains() start");
+			brandContainsList.stream().map(s -> s.toString())
+									  .forEach(System.out::println);
         	tx.commit();
         } catch(Exception e) {
+        	e.printStackTrace();
             tx.rollback();
         } finally {
             em.close();

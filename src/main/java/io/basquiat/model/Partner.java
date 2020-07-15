@@ -45,7 +45,7 @@ public class Partner {
 	/** 파트너 주소 */
 	private String address;
 	
-	/** 파트너사가 소유한 브랜드리스트 */
+	/** 파트너사가 소유한 브랜드리스트 연관관계 주인은 Brand로 둔다. */
 	@OneToMany(mappedBy = "partner", fetch = FetchType.LAZY)
 	private List<Brand> brands = new ArrayList<>();
 	

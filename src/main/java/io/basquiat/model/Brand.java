@@ -50,6 +50,9 @@ public class Brand {
 	/** 브랜드 영문 명 */
 	@Column(name = "br_en_name")
 	private String enName;
+	
+	/** 테스트 용 */
+	private int number;
 
 	/** 브랜드를 소유한 업체 */
 	// brand입장에서 partner는 N:1이다.
