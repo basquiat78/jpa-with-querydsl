@@ -761,4 +761,6 @@ P.S 잘 안되면 issue에 남겨주세요.
 
 # COMPLETE BRANCH    
 
-[basic queryDSL](https://github.com/basquiat78/jpa-with-querydsl/tree/1.query-dsl-basic)
+[basic queryDSL](https://github.com/basquiat78/jpa-with-querydsl/tree/1.query-dsl-basic)    
+
+[SEARCH queryDSL](https://github.com/basquiat78/jpa-with-querydsl/tree/2.query-dsl-select)    
