@@ -764,3 +764,5 @@ P.S 잘 안되면 issue에 남겨주세요.
 [basic queryDSL](https://github.com/basquiat78/jpa-with-querydsl/tree/1.query-dsl-basic)    
 
 [SEARCH queryDSL](https://github.com/basquiat78/jpa-with-querydsl/tree/2.query-dsl-select)    
+
+[Order By And Paging](https://github.com/basquiat78/jpa-with-querydsl/tree/3.query-dsl-orderby-n-paging)    
