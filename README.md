@@ -1,881 +1,952 @@
-# ORDER BY using queryDSL    
+# SELECT CLAUSE using queryDSL    
 
-정렬은 어떤 컬럼을 기준으로 오름차순으로 할 것인지 내림차순으로 할 것인지를 정하는 것이다.    
+앞에서 SELECT를 하면서 객체 전체를 가져오는 예제만 했지 실제로 쿼리처럼 각 컬럼을 명시해서 가져오는 방법은 딱 한번 튜플을 써서 한 예제 외에는 없었다.    
 
-쿼리를 예로 들어보자.
+하지만 실제로 우리는 SELECT절 내에서 다양한 방식을 사용하게 된다. 때론 DB에서 제공하는 함수들, 예들 들면 DATE_FORMAT같은 것을 사용하기도 한다.    
+
+그럼 queryDSL에서는 어떻게 할까? 라는 의문이 드는데 대부분 지원한다. 다만 제공하는 모듈을 사용해야하는 불편함이 있지만 queryDSL에서 제공하는 모듈을 사용하면 된다.    
+
+자 그럼 가장 흔히 사용하는 것부터 알아보자.    
+
+### .as()
+
+alias의 줄임말인 as는 보통 언제 쓰냐면은 다른 테이블을 join해서 데이터를 가져올 때 대상이 되는 Join table의 컬럼명이 같은 경우와 DB에서 제공하는 함수를 사용했을 때 보통 사용한다.     
+
+예를 들면     
+
+```
+SELECT br.name AS br_name,
+	   pt.name AS pt_name
+	FROM brand br
+	JOIN partner pt ON br.partner_id = pt.id
+````
+같이 만일 brand와 partner테이블의 name이 같은 경우 구분을 하기 위해서 사용하게 된다.     
+
+또는 다음과 같이 가장 흔한 카운터 쿼리의 경우처럼 DB의 함수를 사용한 경우에도 사용하게 된다.
 
 ```
 
-SELECT * 
+SELECT COUNT(1) AS count
 	FROM brand
-   WHERE number > 10
-   ORDER BY number ASC;
-
-multi order
-
-SELECT * 
-	FROM brand
-   WHERE number > 10
-   ORDER BY number ASC, br_name ASC;
 ```
+위의 경우 별칭을 안주면 결과에서 COUNT(1)이 컬럼으로 넘어간다.     
 
-처럼 데이터를 가져올 때 그 순서를 정해서 가져올 수 있다.    
+실제로 api호출에 응답으로 데이터를 줄 때 JSON형식에 키값으로 'COUNT(1)'로 들어가는 황당한 경우를 볼 수 있다.     
 
-여러개의 컬럼을 정렬할 때는 어느 것을 먼저 정렬할 것이지에 따라 ','로 나열 할 수 있다.
+~~경험담: 프론트엔드 담당자분님께서 당황하며 'DATE_FORMAT(end_date, '%Y-%m-%d %H:%i')'이란 키가 있는데 이건 뭐죠?~~     
 
-### asc()
+자 그럼 이제 어떻게 사용할까?
 
-오름차순으로 정렬한다. 간혹 후배 개발자와 얘기를 하다보면 이것을 많이 헛갈려 한다.    
+조인 부분은 차후에 하겠지만 일단 이것을 하기 위해서 join을 걸어보자.    
 
-내림차순이 asc인지 desc인지 헛갈려 하는데 이해한다. ~~나도 그랬으니까...~~    
-
-영어로 ascending의 약자인데 오름차순은 말 그대로 작은 수에서 높은 수로 올라가는 모습을 보면 된다.     
-
-[1,5,2,6]같은 배열이 있다면 오름차순이니깐 낮은 수부터 정렬하면 [1,2,5,6]이다. ~~누구나 다 아는...~~    
-
-디비의 result grid를 보면    
+또한 아직 프로젝션에 대해서 공부하지 않았지만 대충 어떤 느낌인지만 보고 가자.    
 
 ```
-code   | number 
- xx    |   1
- xa	   |   5
- xd	   |   9
-```
-이렇게 정렬되서 나올 것이다. 물론 문자열도 마찬가지이다. a-b, ㄱ-ㅎ도 마찬가지이다.    
+package io.basquiat;
 
-자 그럼 이제 코드로 한번 살펴보자.
+import static io.basquiat.model.QBrand.brand;
+import static io.basquiat.model.QPartner.partner;
 
-```
-List<Brand> brandNoAscList = query.select(brand)
-				       		   .from(brand)
-				       		   .where(brand.number.gt(10))
-				       		   .orderBy(brand.number.asc())
-				       		   .fetch();
-System.out.println("brand.number.asc() start");
-brandNoAscList.stream().map(s -> s.toString())
-		 		  	 .forEach(System.out::println);
+import java.util.List;
 
-List<Brand> brandNameAscList = query.select(brand)
-					       		 .from(brand)
-						       	 .where(brand.number.gt(10))
-						       	 .orderBy(brand.name.asc())
-						       	 .fetch();
-System.out.println("brand.name.asc() start");
-brandNameAscList.stream().map(s -> s.toString())
-		  	 		   .forEach(System.out::println);
-```
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.EntityTransaction;
+import javax.persistence.Persistence;
 
-위에서 처럼 number, name으로 오름차순 정렬을 해보자.
+import com.querydsl.core.Tuple;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 
-```
-Hibernate: 
-    /* select
-        brand 
-    from
-        Brand brand 
-    where
-        brand.number > ?1 
-    order by
-        brand.number asc */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
-        from
-            basquiat_brand brand0_ 
-        where
-            brand0_.number>? 
-        order by
-            brand0_.number asc
-brand.number.asc() start
-Brand(code=FBASS, name=에프베이스, enName=FBass, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FODERA, name=포데라, enName=Fodera, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MARLEAUX, name=말로우, enName=Marleaux, number=17, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=18, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FENDER, name=펜더, enName=Fender, number=22, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MATTISSON, name=매티, enName=Mattisson, number=56, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Hibernate: 
-    /* select
-        brand 
-    from
-        Brand brand 
-    where
-        brand.number > ?1 
-    order by
-        brand.name asc */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
-        from
-            basquiat_brand brand0_ 
-        where
-            brand0_.number>? 
-        order by
-            brand0_.br_name asc
-brand.name.asc() start
-Brand(code=MARLEAUX, name=말로우, enName=Marleaux, number=17, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MATTISSON, name=매티, enName=Mattisson, number=56, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=18, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FBASS, name=에프베이스, enName=FBass, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FENDER, name=펜더, enName=Fender, number=22, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FODERA, name=포데라, enName=Fodera, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)            
-```
+/**
+ * 
+ * created by basquiat
+ *
+ */
+public class JpaMain {
 
-첫번째는 number로 두 번째는 name로 오름차순으로 정렬되었다.
-
-### desc()    
-
-당연히 이것은 descending의 약자로 asc의 반대로 생각하면 된다.
-
-그럼 코드로 역시 살펴보는게 최고다.
-
-위의 코드를 그대로 사용하고 asc를 desc로 바꾸자.
-
-```
-List<Brand> brandNoDescList = query.select(brand)
-			       		 	    .from(brand)
-			       		 	    .where(brand.number.gt(10))
-			       		 	    .orderBy(brand.number.desc())
-			       		 	    .fetch();
-System.out.println("brand.number.desc() start");
-brandNoDescList.stream().map(s -> s.toString())
-	 		  	      .forEach(System.out::println);
-
-List<Brand> brandNameDescList = query.select(brand)
-					       		  .from(brand)
-						       	  .where(brand.number.gt(10))
-					       	      .orderBy(brand.name.desc())
-					       	      .fetch();
-System.out.println("brand.name.desc() start");
-brandNameDescList.stream().map(s -> s.toString())
-  	 				    .forEach(System.out::println);
-```
-
-쿼리가 어떻게 날아가는지 확인하자.    
-
-```
-Hibernate: 
-    /* select
-        brand 
-    from
-        Brand brand 
-    where
-        brand.number > ?1 
-    order by
-        brand.number desc */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
-        from
-            basquiat_brand brand0_ 
-        where
-            brand0_.number>? 
-        order by
-            brand0_.number desc
-brand.number.desc() start
-Brand(code=MATTISSON, name=매티, enName=Mattisson, number=56, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FENDER, name=펜더, enName=Fender, number=22, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=18, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MARLEAUX, name=말로우, enName=Marleaux, number=17, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FBASS, name=에프베이스, enName=FBass, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FODERA, name=포데라, enName=Fodera, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Hibernate: 
-    /* select
-        brand 
-    from
-        Brand brand 
-    where
-        brand.number > ?1 
-    order by
-        brand.name desc */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
-        from
-            basquiat_brand brand0_ 
-        where
-            brand0_.number>? 
-        order by
-            brand0_.br_name desc
-brand.name.desc() start
-Brand(code=FODERA, name=포데라, enName=Fodera, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FENDER, name=펜더, enName=Fender, number=22, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FBASS, name=에프베이스, enName=FBass, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=18, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MATTISSON, name=매티, enName=Mattisson, number=56, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MARLEAUX, name=말로우, enName=Marleaux, number=17, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-```
-생각대로 결과가 나온 것을 확인할 수 있다.    
-
-'저는 number을 asc로 먼저 정렬하고 name을 desc로 정렬하고 싶읍니다. 가능한가요?'
-
-당연히 쿼리에서 가능하고 queryDSL도 가능하다.    
-
-앞서 where조건을 and로 줄때 우리는 구분자 ','로 한 것을 이미 알고 있다. 이것도 같은 방식으로 멀티 정렬을 지원한다.    
+    public static void main(String[] args) {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("basquiat");
+        EntityManager em = emf.createEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+        try {
+        	JPAQueryFactory query = new JPAQueryFactory(em);
+        	System.out.println("queryDSL로 뭔가 하기 직전!!!");
+        	List<Tuple> tuple = query.select(
+										brand.name.as("brand_name"),
+										partner.name.as("partner_name")
+									  )
+		       		 	   	   .from(brand)
+		       		 	   	   .join(brand.partner, partner)
+		       		 	   	   .fetch();
+        	
+        	System.out.println(tuple.toString());
+			
+        	tx.commit();
+        } catch(Exception e) {
+        	e.printStackTrace();
+            tx.rollback();
+        } finally {
+            em.close();
+        }
+        emf.close();
+    }
     
+}
 
 ```
-List<Brand> brandMultiOrderList = query.select(brand)
-				       		 	    .from(brand)
-				       		 	    .where(brand.number.gt(10))
-				       		 	    .orderBy(brand.number.asc(), 
-				       		 			     brand.name.desc()
-				       		 			   )
-				       		 	    .fetch();
-System.out.println("multi order by start");
-brandMultiOrderList.stream().map(s -> s.toString())
- 		  	     		  .forEach(System.out::println);
-```
-
-쿼리를 아는 분이라면 참 지겨웁겠다~
+여기서 이 부분을 주목하자.     
 
 ```
-Hibernate: 
-    /* select
-        brand 
-    from
-        Brand brand 
-    where
-        brand.number > ?1 
-    order by
-        brand.number asc,
-        brand.name desc */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
-        from
-            basquiat_brand brand0_ 
-        where
-            brand0_.number>? 
-        order by
-            brand0_.number asc,
-            brand0_.br_name desc
-multi order by start
-Brand(code=FODERA, name=포데라, enName=Fodera, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FBASS, name=에프베이스, enName=FBass, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MARLEAUX, name=말로우, enName=Marleaux, number=17, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=18, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FENDER, name=펜더, enName=Fender, number=22, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MATTISSON, name=매티, enName=Mattisson, number=56, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-```
-결과를 보면 일단 number로 오름차순으로 정렬하고 이름을 내림차순으로 정렬된 것을 볼 수 있다. 포데라 -> 에프베이스    
-
-하지만 의도치 않은 결과를 가져 올 경우도 있다.    
-
-만일 컬럼이 null을 허용하는 경우 그 컬럼을 정렬을 하게 되면 의도치 않게 null이 맨 위로 올라오거나 맨 밑으로 정렬되는 경우가 있다.    
-
-쿼리에서는 이것을 정의하는 방법이 있는데 현재 mySQL로 테스트하기 때문에 일단 링크 하나 던져본다.    
-
-[How to Order NULL Values First or Last in MySQL?](https://www.designcise.com/web/tutorial/how-to-order-null-values-first-or-last-in-mysql)     
-
-'그럼 queryDSL도 그것을 지원해요?'
-
-일단 나는 DB에서 row 하나를 null로 세팅하고 테스트를 해봤다.    
-
-```
-UPDATE basquiat_brand
-   SET br_name = null
- WHERE br_code = 'FODERA'
-```
-툴에서 컬럼을 직접 에디트하면 보통 빈 공백으로 들어가서 의도치 않게 작동할 수 있기 때문에 업데이트 쿼리를 날려서 null로 세팅했다.    
-
-```
-List<Brand> brandList = query.select(brand)
-		       		 	   .from(brand)
-		       		 	   .where(brand.number.gt(10))
-		       		 	   .orderBy(brand.name.asc())
-		       		 	   .fetch();
-System.out.println("order by start");
-brandList.stream().map(s -> s.toString())
-  	     		  .forEach(System.out::println);
+query.select(
+			brand.name.as("brand_name"),
+			partner.name.as("partner_name")
+		  )
+   .from(brand)
+   .join(brand.partner, partner)
+   .fetch();
 ```
 
-일단 그냥 조회하면 
+brand의 이름과 partner의 객체에 선언된 필드명은 name이라 서로 중복이 된다. 물론 테이블 생성시에는 br_name, partner_name이라 직접 쿼리하면 다음과 같이    
+
+```
+SELECT br.br_name,
+	   pt.partner_name
+	FROM brand br
+	JOIN partner pt ON br.partner_id = pt.id
+
+```
+처럼 다르기 때문에 굳이 별칭을 줄 필요가 없지만 객체 입장에서는 name이 중복이 된다.    
+
+따라서 as() API를 이용해서 별칭을 주면 된다. 그럼 결과는?
 
 ```
 Hibernate: 
     /* select
-        brand 
+        brand.name as brand_name,
+        partner.name as partner_name 
     from
-        Brand brand 
-    where
-        brand.number > ?1 
-    order by
-        brand.name asc */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
+        Brand brand   
+    inner join
+        brand.partner as partner */ select
+            brand0_.br_name as col_0_0_,
+            partner1_.partner_name as col_1_0_ 
         from
             basquiat_brand brand0_ 
-        where
-            brand0_.number>? 
-        order by
-            brand0_.br_name asc
-order by start
-Brand(code=FODERA, name=null, enName=Fodera, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MARLEAUX, name=말로우, enName=Marleaux, number=17, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MATTISSON, name=매티, enName=Mattisson, number=56, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=18, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FBASS, name=에프베이스, enName=FBass, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FENDER, name=펜더, enName=Fender, number=22, launchedAt=2020-07-10T10:49:09, updatedAt=null)
+        inner join
+            basquiat_partner partner1_ 
+                on brand0_.partner_id=partner1_.id
+[[에프베이스, 뮤직포스], [펜더, 뮤직포스], [포데라, 뮤직포스], [말로우, 라이딩 베이스], [매티슨, 라이딩 베이스], [샌드버그, 라이딩 베이스]]
 ```
+쿼리를 보면 alias가 붙어서 쿼리가 날아간 것을 볼 수 있다.    
 
-null이 맨 위로 정렬되서 나왔다. 만일 null값은 맨 뒤로 정렬을 하고 싶다면    
+### .when()
 
-```
-List<Brand> brandList = query.select(brand)
-		   		 	       .from(brand)
-			   		 	   .where(brand.number.gt(10))
-			   		 	   .orderBy(brand.name.asc().nullsLast())
-			   		 	   .fetch();
-```
-위 코드처럼 asc로 정렬하는데 null값은 마지막으로 정렬시켜줘라고 말해주면 된다.
+컬럼의 값에 따른 값을 따로 보여줘야 하는 즉, 조건문을 써야 경우가 있다.     
+
+예를 들면 user라는 테이블을 조회햇는데 나이가 10~19살 사이면  '십대', 20~29면 '이십대'로 값을 내려줘야 하는 경우가 있다고 생각해 보자.    
+
+쿼리에서는 대충 이런 식일 것이다.
 
 ```
-Hibernate: 
-    /* select
-        brand 
-    from
-        Brand brand 
-    where
-        brand.number > ?1 
-    order by
-        brand.name asc nulls last */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
-        from
-            basquiat_brand brand0_ 
-        where
-            brand0_.number>? 
-        order by
-            case 
-                when brand0_.br_name is null then 1 
-                else 0 
-            end,
-            brand0_.br_name asc
-order by start
-Brand(code=MARLEAUX, name=말로우, enName=Marleaux, number=17, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MATTISSON, name=매티, enName=Mattisson, number=56, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=18, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FBASS, name=에프베이스, enName=FBass, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FENDER, name=펜더, enName=Fender, number=22, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FODERA, name=null, enName=Fodera, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-```
-
-쿼리가 희안하게 나가긴 하지만 결과는 보는 바와 같다.    
-
-'그럼 nullsFirst()도 있겠군요?'     
-
-이런 경우도 한번 생각해 보자.    
+select user_id, 
+	   CASE 
+	   	WHEN age = 10 THEN '10짤 부럽다'
+	   	WHEN age = 20 THEN '20짤 부럽다'
+	    ELSE '그외 같이 늙어가넹~'
+	   END AS age_interval
+FROM user
 
 ```
-List<Brand> brandList = query.select(brand)
-       		 	     	   .from(brand)
-	       		 	       .where(brand.number.gt(10))
-	       		 	       .orderBy(brand.name.desc())
-	       		 	       .fetch();
-System.out.println("order by start");
-brandList.stream().map(s -> s.toString())
-  	     		.forEach(System.out::println);
-```
 
-내림차순으로 정렬하게 되면 결과는 어떨까?    
+같이 작성할 수도 있고 다음처럼 좀 더 복잡한 조건을 줘서    
 
 ```
-Hibernate: 
-    /* select
-        brand 
-    from
-        Brand brand 
-    where
-        brand.number > ?1 
-    order by
-        brand.name desc */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
-        from
-            basquiat_brand brand0_ 
-        where
-            brand0_.number>? 
-        order by
-            brand0_.br_name desc
-order by start
-Brand(code=FENDER, name=펜더, enName=Fender, number=22, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FBASS, name=에프베이스, enName=FBass, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=18, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MATTISSON, name=매티, enName=Mattisson, number=56, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MARLEAUX, name=말로우, enName=Marleaux, number=17, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FODERA, name=null, enName=Fodera, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-```
-
-아! null인 경우에는 뒤로 정렬이 된다. 만일 요구에 의해 null이 앞으로 와야 한다면 생각대로 하면 된다.     
+SELECT user_id, 
+	   CASE 
+	   	WHEN age >= 10 AND age < 20 THEN '십대 부럽다~'
+	   	WHEN age >= 20 AND age < 30 THEN '이십대 부럽다~'
+	    ELSE '그외 같이 늙어가네~'
+	   END AS age_interval
+FROM user
 
 ```
-List<Brand> brandList = query.select(brand)
-	       		 	       .from(brand)
-	       		 	       .where(brand.number.gt(10))
-	       		 	       .orderBy(brand.name.desc().nullsFirst())
-	       		 	       .fetch();
-```
-위 코드처럼 desc로 정렬할 건데 null이면 앞으로 좀 보내줘서 정렬해줘라고 말해주면 된다.    
 
-뭐 결과는    
+이렇게도 할 수 있고 저렇게도 할 수 있다.     
 
-```
-Hibernate: 
-    /* select
-        brand 
-    from
-        Brand brand 
-    where
-        brand.number > ?1 
-    order by
-        brand.name desc nulls first */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
-        from
-            basquiat_brand brand0_ 
-        where
-            brand0_.number>? 
-        order by
-            case 
-                when brand0_.br_name is null then 0 
-                else 1 
-            end,
-            brand0_.br_name desc
-order by start
-Brand(code=FODERA, name=null, enName=Fodera, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FENDER, name=펜더, enName=Fender, number=22, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FBASS, name=에프베이스, enName=FBass, number=11, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=18, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MATTISSON, name=매티, enName=Mattisson, number=56, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MARLEAUX, name=말로우, enName=Marleaux, number=17, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-```
+일단 쿼리는 이런데 queryDSL의 경우에는 전자의 경우와 후자의 경우 코딩 방식이 달라진다.    
 
-내가 알기로는 null과 관련해서 이게 DB마다 조금씩 다른 것으로 알고 있다.    
+자 그럼 일단 첫 번째 단순 조건을 테스트해보자.    
 
-그래서 방어적인 코드를 작성해야 한다면 null인 경우에는 앞으로 보내서 정렬할지 뒤로 보내서 정렬할 지를 명시적으로 코드로 작성하는 것도 하나의 방법이 될 것이다.   
-
-이렇게 해서 정렬과 관련된 내용을 알아봤다.    
-
-# PAGING using queryDSL   
-
-페이징 처리와 관련해서 많은 DB를 경험하신 분들은 JPA의 페이징 방식은 참 맘에 들 것이다. 아무래도 DB마다 페이징 처리 쿼리가 다 다르기 때문이다.    
-
-그런 면에서 mySlq의 limit offset으로 페이징 하는 방식은 상당히 편리하다. queryDSL의 페이징 처리 방식은 내부적으로 JPA	가 DB의 dialect의 맞게 만들어 주지만 작성하는 방식은 mySql의 limit offset의 방식을 따른다. 아무래도 이게 좀 더 직관적이기 때문인것 같은데 그럼 limit offset이 무엇인지 한번 살펴보자.    
-
-[LIMIT으로 결과 값 제한](https://toma0912.tistory.com/42)    
-
-부연 설명으로 mySql에서는 페이징하는 쿼리가 보통 2가지 방식이 있다.     
-
-하나는 limit에서 하는 방법 하나는 limit offset을 통해서 하는 방법이다. 이 2가지는 약간 방식이 다른데 한번 쿼리로 보자.    
+날 쿼리로 짜면 
 
 ```
-SELECT *
-	FROM brand
-	LIMIT 1, 4
+SELECT br_code AS id,
+	   CASE 
+           WHEN br_en_name = 'Fodera'  THEN 'Victor Wooten이 쓴다는 그 베이스' 
+           WHEN br_en_name = 'Fender'  THEN '베이스의 근본'
+           ELSE '엄청 좋은 고가의 베이스' 
+		END AS comment 
+	FROM basquiat_brand
 
-or
-
-SELECT *
-	FROM brand
-	LIMIT 4 OFFSET 1
+result grid
+id			| comment
+------------- |---------------------------
+FBASS		| 엄청 좋은 고가의 베이스
+FENDER		| 베이스의 근본
+FODERA 		| Victor Wooten이 쓴다는 그 베이스
+MARLEAUX 	| 엄청 좋은 고가의 베이스
+MATTISSON	| 엄청 좋은 고가의 베이스
+SANDBERG		| 엄청 좋은 고가의 베이스
 ```
 
-첫 번째 방식은 이런식이다 -> '테이터를 기준으로 1번 row밑으로 4개의 데이터를 가져와라'
-
-**밑** 이말에 주목하자. 즉 1번 row는 포함하지 않는다.   
-
-예를 들면    
+그럼 코드는 어떻게?    
 
 ```
-id  | name
-1	|  A
-2	|  B
-3	|  C
-4	|  D
-5	|  E
-6	|  F
-
+List<Tuple> tuple = query.select(	brand.code.as("id"),
+								brand.enName.when("Fodera").then("Victor Wooten이 쓴다는 그 베이스")
+									       .when("Fender").then("베이스의 근본")
+									       .otherwise("엄청 좋은 고가의 베이스")
+									       .as("comment")
+							  )
+       		 	   	   .from(brand)
+       		 	   	   .fetch();
 ```
-라는 데이터가 있으면 1번 row밑으로 즉 아이디가 2이 녀석부터 4개이니 id가 2,3,4,5인 row data를 가져오게 된다.    
 
-두 번쨰 방식도 마찬가지이다. -> '데이터를 기준으로 offset 1, 즉 1번 row밑으로 4개의 데이터를 가져와라'    
-
-그래서 보통 페이징 처리할 때는 프론트에서 받는 page, size를 통해서 limit와 offset을 계산하는 로직을 만들게 된다.     
-
-참고로 위에서 limit ?, ?에서 왼쪽이 offest에 해당하고 limit ? offset ? 은 당연히 오른쪽이다. 만일 생략하게 되면 offset은 0으로 잡힌다.    
-
-이말이 무엇이냐면 0번째 row밑으로라는 의미이다. 이해가 가는가?    
-
-즉 limit 10 이렇게 offset부분을 생략하면 '0번째 row밑으로 10개를 가져와라'의 의미가 된다.    
-
-일단 여기서는 데이터를 어떻게 가져오는지만 살펴볼까 한다.    
-
-보통 mySql인 경우에는 pk를 잡으면 조회시에 특별한 조건을 주지 않으면 asc, 즉 올림차순으로 정렬해서 결과를 반환한다.    
-
-지금까지 사용한 엔티티에서 필드 number의 경우에는 검색 조건 테스트를 위해서 그냥 임의의 번호를 넣었는데 이번에는 페이징과 관련된 테스트를 하기위해서 pk로 잡혀있는 br_code의 정렬 순서대로 number를 넘버링을 했다. ~~위에 설명했으니 무슨 의미인지 알겠지?~~     
+아하? 그냥 메소드 체이닝으로 풀어가면 된다.    
 
 ![실행이미지](https://github.com/basquiat78/jpa-with-querydsl/blob/3.query-dsl-orderby-n-paging/capture/capture1.png)    
 
-일단 코드를 짜보는게 중요하다.    
+이전 브랜치에서 사용했던 값 그대로 한번 생각해 보자.     
+
+number를 기준으로 1-3, 4-6인 녀석을 조건문으로 분리하고 싶다면?     
+
+위와 같은 코드로는 할 수 없고 이 때는 CaseBuilder라는 녀석을 사용해야 한다.    
+
+그럼 코드로 한번 보자.     
 
 ```
-List<Brand> brandPagindList = query.select(brand)
-			       		 	    .from(brand)
-			       		 	    .offset(3)
-			       		 	    .limit(3)
-			       		 	    .fetch();
-System.out.println("paging start");
-brandPagindList.stream().map(s -> s.toString())
-  	     		  	  .forEach(System.out::println);
+List<Tuple> tuple = query.select(	brand.code.as("id"),
+								new CaseBuilder().when(brand.number.between(1, 3)).then("참 좋은 베이스 브랜드")
+												 .when(brand.number.between(4, 5)).then("이것도 참 좋은 베이스 브랜드")
+												 .otherwise("이것도 역시 참 좋은 베이스")
+												 .as("comment")
+							  )
+       		 	   	   .from(brand)
+       		 	   	   .fetch();
+System.out.println(tuple.toString());
 ```
 
-자 위에 올려논 이미지의 데이터를 기준으로 저 코드를 해석해 보면 'offset(3), 3번째 row밑으로 limit(3), 3개의 데이터를 가져와라'이다.    
-
-그럼 실제로 그런지 봐야한다.
+결과는 어떻게 나올까?    
 
 ```
+queryDSL로 뭔가 하기 직전!!!
 Hibernate: 
     /* select
-        brand 
+        brand.code as id,
+        (case 
+            when (brand.number between ?1 and ?2) then ?3 
+            when (brand.number between ?4 and ?5) then ?6 
+            else '이것도 역시 참 좋은 베이스' 
+        end) as comment 
     from
         Brand brand */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
-        from
-            basquiat_brand brand0_ limit ?,
-            ?
-order by start
-Brand(code=MARLEAUX, name=말로우, enName=Marleaux, number=4, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MATTISSON, name=매티슨, enName=Mattisson, number=5, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=6, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-```
-
-오호? 쿼리가 나간 것을 보니 위에서 언급했던 첫 번째 방식으로 날리는 것을 확인할 수 있다.    
-
-그리고 이미지에서 Fodera가 3번째 row이니 그 밑인 말로우 베이스부터 3개를 가져온 것을 알 수 있다.    
-
-'한 건의 테스트만으로는 감이 오지 않습니다!'    
-
-그럼 이렇게 해보자. 5번째 row에서 10개를 가져오는 시나리오를 해보자.         
-
-'데이터는 6개 뿐인데 10개를 가져오다니요???'    
-
-일단 한번 날려보자.
-
-```
-List<Brand> brandPagindList = query.select(brand)
-			       		 	    .from(brand)
-			       		 	    .offset(5)
-			       		 	    .limit(10)
-			       		 	    .fetch();
-System.out.println("paging start");
-brandPagindList.stream().map(s -> s.toString())
-  	     		      .forEach(System.out::println);
-```
-
-결과는 이미지를 기준으로 5번째 row밑으로 10개를 가져온다. 하지만 총 6개이기 때문에 하나인 샌드버그만 가져올 것이다.    
-
-```
-Hibernate: 
-    /* select
-        brand 
-    from
-        Brand brand */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
-        from
-            basquiat_brand brand0_ limit ?,
-            ?
-paging start
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=6, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-```
-
-우리는 현재 fetch를 통해서 결과를 받아왔다.    
-
-하지만 paging과 관련된 내용이니 맨 앞에서 봤던 fetchResults()를 통해서 한번 체크를 해보자.     
-
-```
-QueryResults<Brand> qResult = query.select(brand)
-				       		 	.from(brand)
-				       		 	.offset(5)
-				       		 	.limit(10)
-				       		 	.fetchResults();
-System.out.println("paging start");
-System.out.println("qResult offset : " +  qResult.getOffset());
-System.out.println("qResult limit : " +  qResult.getLimit());
-System.out.println("qResult totalCount : " +  qResult.getTotal());
-qResult.getResults().stream().map(s -> s.toString())
- 		  	     		   .forEach(System.out::println);
-```
-
-결과도 보자.    
-
-```
-Hibernate: 
-    /* select
-        count(brand) 
-    from
-        Brand brand */ select
-            count(brand0_.br_code) as col_0_0_ 
+            brand0_.br_code as col_0_0_,
+            case 
+                when brand0_.number between ? and ? then ? 
+                when brand0_.number between ? and ? then ? 
+                else '이것도 역시 참 좋은 베이스' 
+            end as col_1_0_ 
         from
             basquiat_brand brand0_
+[[FBASS, 참 좋은 베이스 브랜드], [FENDER, 참 좋은 베이스 브랜드], [FODERA, 참 좋은 베이스 브랜드], [MARLEAUX, 이것도 참 좋은 베이스 브랜드], [MATTISSON, 이것도 참 좋은 베이스 브랜드], [SANDBERG, 이것도 역시 참 좋은 베이스]]
+```
+오호라! 이런 방식으로 내부적으로 복잡한 조건을 따로 줄 수 있다.     
+
+참고로 between은 양쪽에 설정한 값을 포함한다. 결국 number >= 1 AND number <= 3과 같다는 것을 앞서 브랜치에서 설명하지 않았기에 한번 언급하고 넘어간다.    
+
+경험담으로 JPA와는 무관하게 이와 관련해서 쿼리에 이런 비지니스 로직이 들어가는게 좋냐 마냐라는 걸로 의견을 나눈 적이 있다.    
+
+이게 사람마다 다 다르다.    
+
+A: '쿼리에 저렇게 하나 코드레벨에서 무언가를 하든 뭐 차이가 나나?'    
+
+B: '아무래도 성능의 저하가 있고 차라리 코드레벨에서 비지니스 로직으로 해결하는게 리소스에 이점이 있을 것이다.'    
+
+나는 모르겠다. 대다수의 분들은 데이터를 가져오는데 최적화해서 코드레벨에서 비지니스 로직으로 처리하는게 더 좋다고 말하고 나의 개인적인 입장에서도 코드레벨에서 처리하는게 더 좋다고 본다.    
+
+왜냐하면 성능의 이점 이런건 모르겠지만 최소한 코드의 흐름을 파악하는데 오히려 이게 낫지 않을까?     
+
+원본 데이터의 변경을 가하지 않아서 무엇인지 알 수 있고 차후에 항상 변경되는 요구사항에 맞춰서 코드레벨단에서 변경을 하는게 오히려 더 유연하다고 보기 때문이다.    
+
+뭐 답이 있을까마는....     
+
+### .coalesce() 
+
+mySql로 따지면 IFNULL이나 COALESCE()와 동일한 기능을 하는 녀석이다.    
+
+즉, 해당 컬럼이 null이면 설정한 값으로 대체하라는 의미이다. ~~의외로 COALESCE()을 잘 모르는 분들이 많다. 대부분 IFNULL이 많은 듯~~   
+
+```
+SELECT br_code,
+	   IFNULL(br_name, 'no name') AS br_name, 
+	   -- 또는 COALESCE(br_name, 'no name') AS br_name
+FROM basquiat_brand
+```
+쿼리는 위와 같이 사용하게 된다. 코드를 한번 살펴보자.    
+
+```
+List<Tuple> tuple = query.select( brand.code,	
+							   brand.name.coalesce("no name").as("name")
+							 )
+	       		 	   .from(brand)
+	       		 	   .fetch();
+System.out.println(tuple.toString());
+```
+workbench에서 필드에 null을 세팅할 수 있는 기능이 있다. 그래서 에프베이스라는 값을 null로 세팅하고 코드를 실행하면  
+
+```
 Hibernate: 
     /* select
-        brand 
+        brand.code,
+        coalesce(brand.name,
+        ?1) 
     from
         Brand brand */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
+            brand0_.br_code as col_0_0_,
+            coalesce(brand0_.br_name,
+            ?) as col_1_0_ 
         from
-            basquiat_brand brand0_ limit ?,
-            ?
-paging start
-qResult offset : 5
-qResult limit : 10
-qResult totalCount : 6
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=6, launchedAt=2020-07-10T10:49:09, updatedAt=null)
+            basquiat_brand brand0_
+[[FBASS, no name], [FENDER, 펜더], [FODERA, 포데라], [MARLEAUX, 말로우], [MATTISSON, 매티슨], [SANDBERG, 샌드버그]]
 ```
+결과는 예상한대로 나왔다.    
 
-이전 브랜치에서 fetchResults()와 관련해서 카운트 쿼리에 대해서는 따로 날리는게 유리하다고 언급한 적이 있다.    
+### .nullif()    
 
-나온 김에 이유를 한번 살펴보자.    
+사실 이거는 잘 안쓰는 편인데 회사에서 한 군데 쓰는 곳이 있어서 한번 소개해 본다.    
 
-다음에 배울 내용이지만 join을 한번 걸어보자.     
+가령 이런 것이다. 어떤 컬럼과 뒤에 오는 값이 값으면 해당 컬럼은 null로 표시하는 것이다.    
 
 ```
-QueryResults<Brand> qResult = query.select(brand)
-				       		 	.from(brand)
-				       		 	.join(brand.partner)
-				       		 	.offset(5)
-				       		 	.limit(10)
-				       		 	.fetchResults();
-System.out.println("paging start");
-System.out.println("qResult offset : " +  qResult.getOffset());
-System.out.println("qResult limit : " +  qResult.getLimit());
-System.out.println("qResult totalCount : " +  qResult.getTotal());
-qResult.getResults().stream().map(s -> s.toString())
-  	     		  		   .forEach(System.out::println);
+SELECT br_code, 
+	   NULLIF(br_name, '펜더') AS br_name
+FROM basquiat_brand
+
+result grid
+
+br_code	  |	br_name
+FBASS 	  |	에프베이스
+FENDER 	  |	NULL
+FODERA 	  |	포데라
+MARLEAUX   |	말로우
+MATTISSON  |	매티슨
+SANDBERG   |	샌드버그
+```
+br_name이 '펜더'라면 null로 세팅해라 이런 의미이다.    
+
+위 쿼리 결과를 포면 펜더쪽은 null로 세팅해서 나온다.     
+
+회사에서 사용하는 이유는 특정 상품이 기획전이나 프로모션이 걸려 있을 경우에는 해당 모델명을 null처리를 해줘야 하는 경우가 있다.     
+
+뭐 내부적인 이유인 듯 한데 queryDSL에서도 이것을 지원하니 필요하면 사용하면 된다.    
+
+
+### 문자열 concat 및 number형식의 연산    
+
+보통은 업데이트시 number의 경우에는 1씩 증가시킨다거나 (예를 들면 어떤 리퀘스트가 발생하면 좋아요를 하나 추가한다든가), 문자열을 합친다는가 하는 경우가 생길 수 있다.    
+
+이런 경우 전자는 .add(), 후자는 .concat()을 사용할 수 있다. 
+
+concat과 관련해서 append, prepend같은 함수를 겸해서 사용할 수 있다.    
+
+연산과 관련해서 number형식이라면 .divide(), .abstract(), .multiply()등을 사용할 수 있으며 소수점 처리의 경우 그것을 처리하는 함수도 제공한다.    
+
+1. .round() : 반올림      
+2. .floor() : 버림     
+3. .ceil()  : 올림     
+
+
+일단 위에서 언급한 녀석들을 코드로 한번 확인해 보자.   
+
+```
+List<Tuple> tuple = query.select( brand.code,	
+							   brand.name.append("append").as("append_name"),
+							   brand.name.prepend("prepend").as("prepend_name"),
+							   brand.name.concat("concat").as("concat_name"),
+							   brand.name.concat(brand.number.stringValue()).as("other_type_concat_name"),
+							   brand.number,
+							   brand.number.add(1).as("add_number"),
+							   brand.number.subtract(1).as("subtract_number"),
+							   brand.number.divide(2).as("divide_number"),
+							   brand.number.multiply(2).as("multiply_number")
+							)
+       		 	   	  .from(brand)
+       		 	   	  .fetch();
+
 ```
 
-자 저렇게 해놓고 결과를 한번 보자.    
+결과는   
 
 ```
 Hibernate: 
     /* select
-        count(brand) 
+        brand.code,
+        concat(brand.name,
+        ?1) as append_name,
+        concat(?2,
+        brand.name) as prepend_name,
+        concat(brand.name,
+        ?3) as concat_name,
+        concat(brand.name,
+        str(brand.number)) as other_type_concat_name,
+        brand.number,
+        (brand.number + ?4) as add_number,
+        (brand.number - ?4) as subtract_number,
+        (brand.number / ?5) as divide_number,
+        (brand.number * ?5) as multiply_number 
     from
-        Brand brand   
-    inner join
-        brand.partner */ select
-            count(brand0_.br_code) as col_0_0_ 
+        Brand brand */ select
+            brand0_.br_code as col_0_0_,
+            concat(brand0_.br_name,
+            ?) as col_1_0_,
+            concat(?,
+            brand0_.br_name) as col_2_0_,
+            concat(brand0_.br_name,
+            ?) as col_3_0_,
+            concat(brand0_.br_name,
+            cast(brand0_.number as char)) as col_4_0_,
+            brand0_.number as col_5_0_,
+            brand0_.number+? as col_6_0_,
+            brand0_.number-? as col_7_0_,
+            brand0_.number/? as col_8_0_,
+            brand0_.number*? as col_9_0_ 
         from
-            basquiat_brand brand0_ 
-        inner join
-            basquiat_partner partner1_ 
-                on brand0_.partner_id=partner1_.id
+            basquiat_brand brand0_
+[
+	[FBASS, 에프베이스append, prepend에프베이스, 에프베이스concat, 에프베이스1, 1, 2, 0, 0, 2], 
+	[FENDER, 펜더append, prepend펜더, 펜더concat, 펜더2, 2, 3, 1, 1, 4], 
+	[FODERA, 포데라append, prepend포데라, 포데라concat, 포데라3, 3, 4, 2, 1, 6], 
+	[MARLEAUX, 말로우append, prepend말로우, 말로우concat, 말로우4, 4, 5, 3, 2, 8], 
+	[MATTISSON, 매티슨append, prepend매티슨, 매티슨concat, 매티슨5, 5, 6, 4, 2, 10], 
+	[SANDBERG, 샌드버그append, prepend샌드버그, 샌드버그concat, 샌드버그6, 6, 7, 5, 3, 12]
+]
+
+```
+number타입의 경우에는 2로 나눴을 때 해당 number가 int타입이라 그냥 내부적으로 소수점을 버리는듯.     
+
+참고로 concat의 경우에는 타입이 맞지 않으면 오류가 발생한다. 그래서 .concat(number type)처럼 뒤로 오는 값이 number type이면 .stringValue()로 변환하자.     
+
+'저기요? 보니깐 toString()이 있는데 이걸로 해도 되지 않나요?'    
+
+생성된 QBrand를 따라가다 보면 컬럼에 매핑되는 필드는 객체 타입으로 되어 있는 것을 알 수 있다.    
+
+깊게 들어가 보지 않았지만 toString()을 걸게 되면 객체에 대한 값을 가져오게 되어 있는 듯 해서 실제로는 '에프베이스brand.number'처럼 경로에 대한 문자열이 찍혀서 나오게 된다.    
+
+이것은 직접 테스트해보기 바란다.    
+
+### .constants()    
+
+자주 쓰는 일은 거의 없었던거 같은데 보통 UNION을 걸어야 하는 경우 쓰는 것중 하나가 그냥 고정값을 사용하는 것이다.     
+
+그냥 간단하게 예를 들면    
+
+```
+SELECT br_code,
+       number,
+       'ONE' AS type
+	FROM basquiat_brand
+    WHERE number BETWEEN 1 AND 3
+UNION	
+SELECT br_code,
+	   number,
+	  'TWO' AS type
+	FROM basquiat_brand
+   WHERE number BETWEEN 4 AND 6
+
+result grid
+br_code   |number	| type
+FBASS	 | 1	   	| ONE
+FENDER    | 2	 	| ONE
+FODERA    | 3	 	| ONE
+MARLEAUX  | 4	 	| TWO
+MATTISSON | 5	 	| TWO
+SANDBERG  | 6	 	| TWO
+```
+이런 쿼리를 작성할 일은 없겠지만 쿼리 자체만으로는 그냥 SELECT br_code FROM basquiat_brand와 다를 바 없다.     
+
+그냥 예를 들어서 저렇게 UNION을 중심으로 type을 두고 쿼리의 정체가 어디서 오는것인지 그냥 간단하게 만들어본 쿼리이다.     
+
+자 그럼 'ONE' AS type같은 것을 쓸 수 있을까?    
+
+물론 다음과 같이 하고 싶겠지만 ~~그건 니 생각~~     
+
+```
+List<Tuple> tuple = query.select( brand.code,	
+        						   "A" 
+	    						 )
+ 	   	 			   .from(brand)
+       		 	   	   .fetch();
+```
+뻘겋게 IDE가 여러분에게 에러를 보여줄 것이다.    
+
+사실 어떻게 보면 당연한 것이다. 실제로 QBrand객체를 따라가면 필드의 타입이 String이나 Integer가 아니다.     
+
+DateTimePath, StringPath, NumberPath같이 객체로 구성되어져 있는 것을 보면 그냥 문자열 "A"를 넣으면 에러가 발생하는 것은 당연할 것이다.    
+
+그래서 다음 코드를 한번 살펴보자.    
+
+```
+List<Tuple> tuple = query.select( brand.code,	
+							   Expressions.constant("A"),
+							   ExpressionUtils.as(Expressions.constant("A"), "constant")
+							)
+       		 	   	   .from(brand)
+       		 	   	   .fetch();
+```
+맨 처음이 Expressions을 사용해 상수를 만드는 일반적인 사용법이고 밑에 부분이 생성한 상수를 ExpressionUtils를 활용해 감싸서 alias를 주는 방법이다.     
+
+하지만 실제 날아가는 것은 생각한 것과는 좀 다르다.    
+
+```
 Hibernate: 
     /* select
-        brand 
+        brand.code 
     from
-        Brand brand   
-    inner join
-        brand.partner */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
+        Brand brand */ select
+            brand0_.br_code as col_0_0_ 
         from
-            basquiat_brand brand0_ 
-        inner join
-            basquiat_partner partner1_ 
-                on brand0_.partner_id=partner1_.id limit ?,
-            ?
-paging start
-qResult offset : 5
-qResult limit : 10
-qResult totalCount : 6
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=6, launchedAt=2020-07-10T10:49:09, updatedAt=null)
+            basquiat_brand brand0_
+[[FBASS, A, A], [FENDER, A, A], [FODERA, A, A], [MARLEAUX, A, A], [MATTISSON, A, A], [SANDBERG, A, A]]
 ```
-자 위에 날아간 카운터 쿼리를 보자.    
+쿼리에는 날아가는 것이 보이지 않는다.     
+
+아마 내부적으로는 최적화와 관련해서 실제 쿼리에는 실어서 보내지 않는 것 같다.    
+
+이 부분은 내용을 한번 찾아봐야 할 듯 싶다.    
+
+이 외에도 많은 것들이 존재하긴 하는데 실무에서 자주 쓰일 만한 것들 위주로 한번 소개해 봤다.    
+
+그 외에도 aggregation, 즉 min, max, avg같은 집합과 관련된 녀석들이 있는데 이 녀석들은 GROUP BY와 관련된 내용에서 소개할 예정이다.
+
+# SUB QUERY using queryDSL   
+
+서브 쿼리는 말 그대로 쿼리 안에 인쿼리로 어떤 값을 세팅할 때 사용한다.    
+
+예를 들면 다음과 같이 사용할 수 있다.
+
+```
+SELECT br_code,
+       br_en_name,
+       (SELECT COUNT(1) FROM basquiat_brand) AS br_count
+	FROM basquiat_brand
+	
+result grid
+
+br_code	   |	br_en_name  |	br_count
+
+'FBASS',		'FBass',		'6'
+'FENDER',	'Fender',	'6'
+'FODERA',	'Fodera',	'6'
+'MARLEAUX',	'Marleaux',	'6'
+'MATTISSON',	'Mattisson',	'6'
+'SANDBERG',	'Sandberg',	'6'
+```
+처럼 SELECT절에 사용하는 방법이 있다.     
+
+물론 서브 쿼리이기 때문에 조건도 가능하다.    
+
+```
+SELECT id,
+       partner_name,
+       address,
+       (SELECT COUNT(1) FROM basquiat_brand WHERE partner_id = id) AS '파트너가 가지고 있는 전체 브랜드 카운트'
+	FROM basquiat_partner
+	
+result grid
+id			 |	partner_name	 |	   address	   	 |	파트너가 가지고 있는 전체 브랜드 카운트
+'MUSICFORCE',		'뮤직포스',			'청담동 어딘가 있다.',		'3'
+'RIDINBASS',		'라이딩 베이스',		'합정동 어딘가 있다.',		'3'
+```
+
+이렇게 조건을 줄 수도 있다.    
+
+### SELECT CLAUSE Sub Query
+
+그럼 코드로 확인하자.    
+
+```
+package io.basquiat;
+
+import static io.basquiat.model.QBrand.brand;
+import static io.basquiat.model.QPartner.partner;
+
+import java.util.List;
+
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.EntityTransaction;
+import javax.persistence.Persistence;
+
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.ExpressionUtils;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+
+/**
+ * 
+ * created by basquiat
+ *
+ */
+public class JpaMain {
+
+    public static void main(String[] args) {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("basquiat");
+        EntityManager em = emf.createEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+        try {
+        	JPAQueryFactory query = new JPAQueryFactory(em);
+        	System.out.println("queryDSL로 뭔가 하기 직전!!!");
+        List<Tuple> tuple = query.select( partner.id,
+									  partner.name,
+									  partner.address,
+									  JPAExpressions.select(brand.count())
+                    								   .from(brand)
+                    								   .where(partner.eq(brand.partner))
+									)
+						 	   	 .from(partner)
+						 	   	 .fetch();
+        	System.out.println(tuple.toString());
+        	tx.commit();
+        } catch(Exception e) {
+        	e.printStackTrace();
+            tx.rollback();
+        } finally {
+            em.close();
+        }
+        emf.close();
+    }
+    
+}
+
+```
+위와 같이 JPAExpressions을 활용하는 방법이다.    
+
+결과를 보자.    
 
 ```
 Hibernate: 
     /* select
-        count(brand) 
-    from
-        Brand brand   
-    inner join
-        brand.partner */ select
-            count(brand0_.br_code) as col_0_0_ 
+        partner.id,
+        partner.name,
+        partner.address,
+        (select
+            count(brand) 
         from
-            basquiat_brand brand0_ 
-        inner join
-            basquiat_partner partner1_ 
-                on brand0_.partner_id=partner1_.id
+            Brand brand 
+        where
+            partner = brand.partner) 
+    from
+        Partner partner */ select
+            partner0_.id as col_0_0_,
+            partner0_.partner_name as col_1_0_,
+            partner0_.address as col_2_0_,
+            (select
+                count(brand1_.br_code) 
+            from
+                basquiat_brand brand1_ 
+            where
+                partner0_.id=brand1_.partner_id) as col_3_0_ 
+        from
+            basquiat_partner partner0_
+[[MUSICFORCE, 뮤직포스, 청담동 어딘가 있다., 3], [RIDINBASS, 라이딩 베이스, 합정동 어딘가 있다., 3]]
 ```
 
-카운트 쿼리가 실제로 작성된 queryDSL의 쿼리를 토대로 구하는 것을 볼 수 있다. 하지만 totalCount는 6건으로 조인을 하든 안하든 똑같다.    
-
-당연한 이야기이긴 하지만 그렇다면 페이징처리를 위한 전체 카운트를 구하는데 굳이 조인을 해서 구할 필요가 있냐는 의문이 든다.    
-
-그냥 전체 카운터 쿼리를 다음과 같이    
+물론 별칭도 위에서 상수를 세팅할 때 별칭을 주는 방식으로 서브 쿼리이 별칭을 줄 수 있다.
 
 ```
-long total = query.select(brand)
-				.from(brand)
-				.fetchCount();
+ExpressionUtils.as(
+			  	JPAExpressions.select(brand.count())
+			  				 .from(brand)
+			  				 .where(brand.partner.id.eq(partner.id)),
+			    "brand_total_count"
+		  )
 ```
 
-처럼 쿼리를 날리는게 성능상 이점을 갖는다.    
-
-그래서 카운트 쿼리는 따로 작성해서 구하는 것이 성능면에서도 유리하다고 말하는 것이다.    
-
-지금 예제는 워낙 간단해서 와닿지 않을 수 있다. 하지만 실무에서는 특히 내가 재직하고 있는 회사에서는 상품과 관련되서 많은 테이블들이 JOIN으로 걸려 있지만 전체 카운트를 가져올 때는 그 많은 테이블들과 조인해서 가져올 필요가 없는 경우로 카운트 구하는 쿼리를 따로 작성해서 가져온다.    
-
-### offset생략    
-
-위에서 sql을 예로 들면서 offset 생략시 0으로 기본 세팅된다고 언급했다.    
-
-queryDSL도 그럴까?    
-
-```
-QueryResults<Brand> qResult = query.select(brand)
-				       		 	.from(brand)
-				       		 	.join(brand.partner)
-				       		 	.limit(10)
-				       		 	.fetchResults();
-System.out.println("paging start");
-System.out.println("qResult offset : " +  qResult.getOffset());
-System.out.println("qResult limit : " +  qResult.getLimit());
-System.out.println("qResult totalCount : " +  qResult.getTotal());
-qResult.getResults().stream().map(s -> s.toString())
-  	     		  			 .forEach(System.out::println);
-```
-
-offset을 제거하고    
+결과는 별칭 줬기 때문에 쿼리가 살짝 달라진다.    
 
 ```
 Hibernate: 
     /* select
-        count(brand) 
-    from
-        Brand brand   
-    inner join
-        brand.partner */ select
-            count(brand0_.br_code) as col_0_0_ 
+        partner.id,
+        partner.name,
+        partner.address,
+        (select
+            count(brand) 
         from
-            basquiat_brand brand0_ 
-        inner join
-            basquiat_partner partner1_ 
-                on brand0_.partner_id=partner1_.id
+            Brand brand 
+        where
+            partner = brand.partner) as br_tot_count 
+    from
+        Partner partner */ select
+            partner0_.id as col_0_0_,
+            partner0_.partner_name as col_1_0_,
+            partner0_.address as col_2_0_,
+            (select
+                count(brand1_.br_code) 
+            from
+                basquiat_brand brand1_ 
+            where
+                partner0_.id=brand1_.partner_id) as col_3_0_ 
+        from
+            basquiat_partner partner0_
+[[MUSICFORCE, 뮤직포스, 청담동 어딘가 있다., 3], [RIDINBASS, 라이딩 베이스, 합정동 어딘가 있다., 3]]
+```
+위에서 날아간 쿼리를 보면 내부적으로 별칭을 주는 것을 알 수 있다.     
+
+몇 버전인지는 모르겠지만 이전 버전에서는 SELECT절에 서브 쿼리를 사용하기 위해서는 ExpressionUtils.as를 감싸서 사용했던 걸로 기억하는데 현재 사용하는 최신 버전은 그마저도 필요가 없다.    
+
+### WHERE CLAUSE Sub Query
+
+자 그럼 이런 경우도 한번 살펴보자.    
+
+어거지이긴 하지만 basquiat_brand의 number가 파트너사의 전체 카운트보다 큰 brand만 추려내는 요구 사항이 있다고 보자.    
+
+```
+SELECT br_code,
+	   br_en_name,
+       br_name,
+       number
+	FROM basquiat_brand
+    WHERE (SELECT count(1) FROM basquiat_partner) < number
+
+result grid
+ br_code	   |  br_en_name | br_name	   |	number
+'FODERA',	'Fodera',	 '포데라',		 '3'
+'MARLEAUX',	'Marleaux',	 '말로우',		 '4'
+'MATTISSON',	'Mattisson',	 '매티슨',		 '5'
+'SANDBERG',	'Sandberg',	 '샌드버그',	 '6'
+```
+뭔가 좀 이상하긴 하지만 파트너사 전체 카운트가 2이기 때문에 number가 2보다 큰 데이터가 나왔다.    
+
+자 그럼 코드로 작성을 해 보자.    
+
+```
+package io.basquiat;
+
+import static io.basquiat.model.QBrand.brand;
+import static io.basquiat.model.QPartner.partner;
+
+import java.util.List;
+
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.EntityTransaction;
+import javax.persistence.Persistence;
+
+import com.querydsl.core.Tuple;
+import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+
+/**
+ * 
+ * created by basquiat
+ *
+ */
+public class JpaMain {
+
+    public static void main(String[] args) {
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("basquiat");
+        EntityManager em = emf.createEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+        try {
+        	JPAQueryFactory query = new JPAQueryFactory(em);
+        	System.out.println("queryDSL로 뭔가 하기 직전!!!");
+        	List<Tuple> tuple = query.select( brand.code,
+        									  brand.enName,
+        									  brand.name,
+        									  brand.number
+	    									)
+				       		 	   	 .from(brand)
+				       		 	   	 .where(brand.number.gt(JPAExpressions.select(partner.count())
+				       		 	   			 		   	  				  .from(partner)
+       		 	   			 		   	  				   )
+			       		 	   			   )
+				       		 	   	 .fetch();
+        	System.out.println(tuple.toString());
+        	tx.commit();
+        } catch(Exception e) {
+        	e.printStackTrace();
+            tx.rollback();
+        } finally {
+            em.close();
+        }
+        emf.close();
+    }
+    
+}
+```
+코드를 보면 별반 다를 바가 없다.    
+
+결과를 한번 보자.    
+
+```
 Hibernate: 
     /* select
-        brand 
+        brand.code,
+        brand.enName,
+        brand.name,
+        brand.number 
     from
-        Brand brand   
-    inner join
-        brand.partner */ select
-            brand0_.br_code as br_code1_0_,
-            brand0_.br_en_name as br_en_na2_0_,
-            brand0_.launched_at as launched3_0_,
-            brand0_.br_name as br_name4_0_,
-            brand0_.number as number5_0_,
-            brand0_.partner_id as partner_7_0_,
-            brand0_.updated_at as updated_6_0_ 
+        Brand brand 
+    where
+        brand.number > (
+            select
+                count(partner) 
+            from
+                Partner partner
+        ) */ select
+            brand0_.br_code as col_0_0_,
+            brand0_.br_en_name as col_1_0_,
+            brand0_.br_name as col_2_0_,
+            brand0_.number as col_3_0_ 
         from
             basquiat_brand brand0_ 
-        inner join
-            basquiat_partner partner1_ 
-                on brand0_.partner_id=partner1_.id limit ?
-paging start
-qResult offset : 0
-qResult limit : 10
-qResult totalCount : 6
-Brand(code=FBASS, name=에프베이스, enName=FBass, number=1, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FENDER, name=펜더, enName=Fender, number=2, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=FODERA, name=포데라, enName=Fodera, number=3, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MARLEAUX, name=말로우, enName=Marleaux, number=4, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=MATTISSON, name=매티슨, enName=Mattisson, number=5, launchedAt=2020-07-10T10:49:09, updatedAt=null)
-Brand(code=SANDBERG, name=샌드버그, enName=Sandberg, number=6, launchedAt=2020-07-10T10:49:09, updatedAt=null)
+        where
+            brand0_.number>(
+                select
+                    count(partner1_.id) 
+                from
+                    basquiat_partner partner1_
+            )
+[[FODERA, Fodera, 포데라, 3], [MARLEAUX, Marleaux, 말로우, 4], [MATTISSON, Mattisson, 매티슨, 5], [SANDBERG, Sandberg, 샌드버그, 6]]
 ```
-결과를 확인하면 그렇다는 것을 알 수 있다.    
+결국 우리가 이전 브랜치에서 배웠던 WHERE절에서 제공하는 API와의 조합으로 서브 쿼리를 사용할 수 있다.    
 
-이렇게 해서 페이징과 관련된 API를 살펴봤다.    
+사실 서브 쿼리는 편하긴 하다. 하지만 예전 알던 DBA분이 정말 꼭 써야만 하는 이유가 있는 경우가 아니라면 대부분은 JOIN으로 해결할 수 있기 때문에 가급적이면 서브 쿼리는 잘 안쓰는 게 좋다고 이야기한 적이 있다. 특히 mySql과 관련해서 IN과 연계하는 서브 쿼리의 경우에는 인덱스를 타지 않아 조회 성능이 현저하게 떨어지기 때문이라는 것이다.    
 
-번외이긴 하지만    
+Full Scan이 일어난다는 이야기를 언뜻 한거 같은데 자 그러면 이번이 이 브랜치의 마지막이 될 것이기 때문에 한번 위 쿼리를 한번 플랜을 떠서 살펴보는 시간을 갖겠다.    
 
-[Pagination을 위한 최적화 SQL](https://blog.lulab.net/database/optimize-pagination-sql-by-join-instead-of-limit/)          
+```
+EXPLAIN
+SELECT id,
+       partner_name,
+       address,
+       (SELECT COUNT(1) FROM basquiat_brand WHERE partner_id = id) AS '파트너가 가지고 있는 전체 브랜드 카운'
+	FROM basquiat_partner;
+```
+우리가 queryDSL로 변환했던 쿼리이다. mySQL에서 플랜을 보는 방법은 쿼리 위에 'EXPLAIN' 키워드를 두고 쿼리를 하면 된다.
 
-이런 것도 있다.     
+![실행이미지](https://github.com/basquiat78/jpa-with-querydsl/blob/4.query-dsl-select-sub-query/capture/capture1.png)    
 
-그냥 알아두면 언젠가는 적용해 볼 수 있는 내용이니 한번 훝어 보는 것도 괜찮다.    
+일일이 설명할려니 일단 필력이 딸리고 지식도 살짝 딸려서 링크 하나 걸어본다.    
 
-다음 브랜치에서는 SELECT절에서 사용할 수 있는 기능과 sub query에 대해서 알아볼 까 한다.
+[EXPLAIN을 사용해서 쿼리 최적화 하기](http://www.mysqlkorea.com/sub.html?mcode=manual&scode=01&m_no=21444&cat1=7&cat2=217&cat3=227&lang=k)     
 
-# At A Glance     
+[MySQL 옵티마이저 구조](https://cheese10yun.github.io/mysql-explian/)
 
-정렬, 조건 검색 그리고 페이징과 관련해서 우리는 지금 테스트로는 사실 성능 저하에 대한 부분을 경험하지 못한다.     
+링크를 보면 몇 몇 중요한 키포인트가 있는데 그 중 하나가 바로 type이다.    
 
-또한 DB 성능과 관련해서는 백엔드에서 아무리 잘 짜여진 쿼리라 할지라도 DB 테이블의 인덱스라든가 최적화를 하지 않으면 성능을 제대로 뽑아내지 않는다.     
+id를 기준으로 보면 대상 테이블 basquiat_partner에 대해서 ALL이다. 이것은 보통 full scan이 일어났을 경우 발생하는데 전체 데이터를 다 훝어봤다는 의미이다. 지금이야 데이터가 몇 건 안되지만 만일 수십, 수백만건이상이 있는 테이블을 full scan을 했다고 생각해 보자.    
 
-꾸준히 이야기하는 거지만 JPA는 만능이 아니다. 그와 함께 DB에 대해서 공부를 해야한다. 그렇다고 DBA 수준이 되라는 이야기는 아니다.    
+```
+EXPLAIN  
+    SELECT id,
+       partner_name,
+       address,
+       COUNT(bb.br_code) AS count
+	FROM basquiat_partner bp
+    JOIN basquiat_brand bb ON bp.id = bb.partner_id
+    GROUP BY id
+```
+서브 쿼리를 JOIN으로 풀고 aggregation, 즉 카운트라는 집합 함수를 사용했기 때문에 파트너사의 id를 GROUP BY로 잡았다.      
 
-적어도 기본적인 것에 충실해야 한다고 말하고 싶다.    
+그럼 한번 플랜을 떠 보자.    
+
+![실행이미지](https://github.com/basquiat78/jpa-with-querydsl/blob/4.query-dsl-select-sub-query/capture/capture1.png)    
+
+실제로 쿼리를 날리면 같은 결과지만 full scan을 타지 않고 type이 index이다.     
+
+자 그럼 SELECT절의 서브 쿼리를 join방식으로 발라보자.    
+
+```
+List<Tuple> tuple = query.select( partner.id,
+							   partner.name,
+							   partner.address,
+							   brand.count().as("br_tot_count")
+							 )
+			 	   	   .from(partner)
+			 	   	   .join(brand).on(partner.id.eq(brand.partner.id)) // .join(brand).on(partner.eq(brand.partner)) 객체 자체를 비교해도 된다. 
+			 	   	   .groupBy(partner.id) // .groupBy(partner) 객체는 이미 pk를 알고 있다.
+			 	   	   .fetch();
+```
+아직 join과 groupBy를 배우지 않았지만 변환하면 저렇게 바꿀 수 있다. 결과는?   
+
+```
+queryDSL로 뭔가 하기 직전!!!
+Hibernate: 
+    /* select
+        partner.id,
+        partner.name,
+        partner.address,
+        count(brand) as br_tot_count 
+    from
+        Partner partner   
+    inner join
+        Brand brand with partner.id = brand.partner.id 
+    group by
+        partner.id */ select
+            partner0_.id as col_0_0_,
+            partner0_.partner_name as col_1_0_,
+            partner0_.address as col_2_0_,
+            count(brand1_.br_code) as col_3_0_ 
+        from
+            basquiat_partner partner0_ 
+        inner join
+            basquiat_brand brand1_ 
+                on (
+                    partner0_.id=brand1_.partner_id
+                ) 
+        group by
+            partner0_.id
+[[MUSICFORCE, 뮤직포스, 청담동 어딘가 있다., 3], [RIDINBASS, 라이딩 베이스, 합정동 어딘가 있다., 3]]
+```
+
+사실 예제 자체가 좀 어거지라 참담하기도 하고 데이터 자체도 유의미하지 않아서 큰 차이점이 없어 보이지만 실제로 서브 쿼리가 많은 경우에 성능 저하를 체감한다.     
+
+최근 이와 관련해서 재직중인 회사에서는 DB와 관련 최적화 튜닝을 위해 초빙했던 그 분도 이 서브 쿼리를 분석해 조인 형식으로 풀어가는데 상당히 많은 시간을 할애하기도 했었다.     
+
+일단 이 브랜치에서 해야 할 분량은 얼추 맞춘 거 같다.    
+
+예제로 사용한 WHERE절의 서브 쿼리는 실력이 딸려서 JOIN으로 해결못함. ~~안되는건지 못한 건지 모르는게 함정.~~
+
+아참 쿼리에서 FROM의 Inline View로도 서브 쿼리가 가능하다. 경험이 있는 분들은 봤을 수가 있는데    
+
+예를 들면 어거지이긴 하지만    
+
+```
+SELECT subQuery.*
+	FROM (SELECT bb.br_code, 
+				bb.br_en_name,
+                  bp.id AS partner_id,
+                  bp.address
+			FROM basquiat_brand bb 
+			JOIN basquiat_partner bp ON bb.partner_id = bp.id
+	      ) subQuery
+```
+요런 쿼리들을 볼 수 있는데 저것을 보통 인라인 뷰라고 보통 지칭을 한다.    
+
+아쉽게도 하이버네이트에서는 이것을 지원하지 않는다.    
+
+queryDSL은 JPQL문법을 보다 개발자에 편의에 맞춰서 생긴 만큼 JPQL에서 지원하지 않는 것은 사용할 수 없다. 아마도 해볼려고 해도 뻘건 에러를 볼 것이다.    
+
+언제가는 뭐 지원할지 모르겠지만 인라인 뷰 형식의 서브 쿼리를 꼭 써야 하는 경우라면 최대한 조인이나 네이티브 쿼리를 사용해야한다.     
+
+~~에이 설마? 별로 좋은 건 아니라고 해도 언젠가는 지원하겠지...~~ 
+
+이렇게 이번 브랜치는 마무리하고자 한다.    
+
+다음에는 Aggregation, 즉 집합과 그와 관련해서 실과 바늘같이 따라오는 GROUP BY에 대해서 알아볼 까 한다.     
