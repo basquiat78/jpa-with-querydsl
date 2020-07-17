@@ -766,3 +766,5 @@ P.S 잘 안되면 issue에 남겨주세요.
 [SEARCH queryDSL](https://github.com/basquiat78/jpa-with-querydsl/tree/2.query-dsl-select)    
 
 [Order By And Paging](https://github.com/basquiat78/jpa-with-querydsl/tree/3.query-dsl-orderby-n-paging)    
+
+[Select Clause And Sub Query](https://github.com/basquiat78/jpa-with-querydsl/tree/4.query-dsl-select-sub-query)    
