@@ -1401,7 +1401,7 @@ List<Brand> brandLikeList = query.select(brand)
 			       		 	  
 List<Brand> brandLikeList = query.select(brand)
 			       		 	  .from(brand)
-			       		 	  .where(brand.enName.like("%end%")) // end 문자열로 끝나는 데이터 검색 
+			       		 	  .where(brand.enName.like("%end%")) // end 문자열이 포함된 데이터 검색 
 			       		 	  .fetch();
 ```
 
