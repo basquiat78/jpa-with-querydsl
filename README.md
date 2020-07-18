@@ -866,7 +866,7 @@ EXPLAIN
 
 그럼 한번 플랜을 떠 보자.    
 
-![실행이미지](https://github.com/basquiat78/jpa-with-querydsl/blob/4.query-dsl-select-sub-query/capture/capture1.png)    
+![실행이미지](https://github.com/basquiat78/jpa-with-querydsl/blob/4.query-dsl-select-sub-query/capture/capture2.png)    
 
 실제로 쿼리를 날리면 같은 결과지만 full scan을 타지 않고 type이 index이다.     
 
