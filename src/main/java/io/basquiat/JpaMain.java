@@ -1,7 +1,6 @@
 package io.basquiat;
 
-import static io.basquiat.model.QBrand.brand;
-import static io.basquiat.model.QPartner.partner;
+import static io.basquiat.model.QProduct.product;
 
 import java.util.List;
 
@@ -10,9 +9,8 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
 
+import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-
-import io.basquiat.model.Brand;
 
 /**
  * 
@@ -30,26 +28,23 @@ public class JpaMain {
         	JPAQueryFactory query = new JPAQueryFactory(em);
         	System.out.println("queryDSL로 뭔가 하기 직전!!!");
         	
-        	List<Brand> selectBrand = query.select(brand)
-						 	   	     .from(brand)
-						 	   	     .innerJoin(brand.partner, partner)
-						 	   	     .fetch();
-        	System.out.println(selectBrand.size());
-        	System.out.println(selectBrand.toString());
-        	selectBrand.stream().map(br -> br.getPartner().toString())
-        						.forEach(System.out::println);
+        	List<Tuple> tuple = query.select(
+        							 product.brandName,
+        							 product.price.min(),
+        							 product.price.max(),
+        							 product.price.sum(),
+									 product.price.avg()
+									)
+							  	.from(product)
+							  	.groupBy(product.brandName)
+							  	.having(	
+							  			product.price.avg().gt(5000000),
+							  			product.price.avg().lt(5400000)
+							  			)
+							  	.fetch();
         	
-        	System.out.println("========================================");
+        	System.out.println(tuple);
         	
-        	List<Brand> fetchBrand = query.select(brand)
-							 	   	      .from(brand)
-								 	   	  .leftJoin(brand.partner).fetchJoin()
-			 					 	   	  .orderBy(brand.partner.name.asc().nullsFirst())
-								 	   	  .fetch();
-			System.out.println(fetchBrand.size());
-			System.out.println(fetchBrand.toString());
-			fetchBrand.stream().map(br -> br.getPartner() == null ? "null": br.getPartner().toString())
-							   .forEach(System.out::println);
         	tx.commit();
         } catch(Exception e) {
         	e.printStackTrace();

@@ -25,10 +25,13 @@ import lombok.ToString;
 public class Product {
 
 	@Builder
-	public Product(String name, String brandName) {
+	public Product(String name, int price, String brandName, String model, String color) {
 		super();
 		this.name = name;
+		this.price = price;
 		this.brandName = brandName;
+		this.model = model;
+		this.color = color;
 	}
 
 	/** 생산품 고유 아이디 */
@@ -40,9 +43,18 @@ public class Product {
 	@Column(name = "product_name")
 	private String name;
 	
+	/** 생산품 가격 */
+	private int price;
+	
 	/** 브랜드 명 */
 	@Column(name = "brand_name")
 	private String brandName;
+	
+	/** 모델 */
+	private String model;
+	
+	/** 색상 */
+	private String color;
 	
 	@Column(name = "created_at")
 	private LocalDateTime createdAt;
