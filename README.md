@@ -770,3 +770,5 @@ P.S 잘 안되면 issue에 남겨주세요.
 [Select Clause And Sub Query](https://github.com/basquiat78/jpa-with-querydsl/tree/4.query-dsl-select-sub-query)     
 
 [JOIN](https://github.com/basquiat78/jpa-with-querydsl/tree/5.query-dsl-join-and-aggregation)     
+
+[GROUP BY](https://github.com/basquiat78/jpa-with-querydsl/tree/6.query-dsl-groupby-aggregation)    
