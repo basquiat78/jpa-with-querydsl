@@ -306,8 +306,8 @@ CREATE TABLE `basquiat_product` (
   `product_name` varchar(255) DEFAULT NULL,
   `price` int(11) DEFAULT 0,
   `brand_name` varchar(255) NOT NULL,
-  `model` varchar(255),
-  `color` varchar(255),
+  `model` varchar(255), 
+  `color` varchar(255), 
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`)
