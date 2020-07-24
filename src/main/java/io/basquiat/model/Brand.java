@@ -16,6 +16,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 /**
@@ -52,6 +53,7 @@ public class Brand {
 	private String enName;
 	
 	/** 테스트 용 */
+	@Setter
 	private int number;
 
 	/** 브랜드를 소유한 업체 */

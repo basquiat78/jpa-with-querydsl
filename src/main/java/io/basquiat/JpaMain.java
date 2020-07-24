@@ -1,16 +1,21 @@
 package io.basquiat;
 
-import static io.basquiat.model.QProduct.product;
+import static com.querydsl.core.group.GroupBy.groupBy;
+import static com.querydsl.core.group.GroupBy.list;
+import static io.basquiat.model.QBrand.brand;
+import static io.basquiat.model.QPartner.partner;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
 
-import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+
+import io.basquiat.model.Brand;
 
 /**
  * 
@@ -27,24 +32,32 @@ public class JpaMain {
         try {
         	JPAQueryFactory query = new JPAQueryFactory(em);
         	System.out.println("queryDSL로 뭔가 하기 직전!!!");
+
+//        	ProductDTO selectProduct = query.select(Projections.constructor(
+//														ProductDTO.class, 
+//														product.id,
+//														product.name, 
+//														product.price,
+//														product.brandName,
+//														product.model,
+//														product.color,
+//														JPAExpressions.select(product.count()).from(product)
+//												))
+//									   		.from(product)
+//									   		.where(product.id.eq(1L))
+//									   		.fetchFirst();
+//        	System.out.println(selectProduct.toString());
         	
-        	List<Tuple> tuple = query.select(
-        							 product.brandName,
-        							 product.price.min(),
-        							 product.price.max(),
-        							 product.price.sum(),
-									 product.price.avg()
-									)
-							  	.from(product)
-							  	.groupBy(product.brandName)
-							  	.having(	
-							  			product.price.avg().gt(5000000),
-							  			product.price.avg().lt(5400000)
-							  			)
-							  	.fetch();
+        	Map<String, List<Brand>> results = query.from(brand)
+        											.join(brand.partner, partner)
+									        		//.transform(groupBy(partner.id).as(list(brand)));
+        											.transform(groupBy(partner.name).as(list(brand)));
+
+        	List<Brand> brandList = results.get("라이딩 베이스");
+        	System.out.println(brandList);
         	
-        	System.out.println(tuple);
-        	
+        	Brand selectOne = brandList.get(0);
+        	selectOne.setNumber(11111);
         	tx.commit();
         } catch(Exception e) {
         	e.printStackTrace();

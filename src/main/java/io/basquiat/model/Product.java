@@ -11,6 +11,8 @@ import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 
+import com.querydsl.core.annotations.QueryProjection;
+
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,6 +25,20 @@ import lombok.ToString;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @ToString
 public class Product {
+	
+	//@QueryProjection
+	public Product(Long id, String name, int price, String brandName, String model, String color,
+			LocalDateTime createdAt, LocalDateTime updatedAt) {
+		super();
+		this.id = id;
+		this.name = name;
+		this.price = price;
+		this.brandName = brandName;
+		this.model = model;
+		this.color = color;
+		this.createdAt = createdAt;
+		this.updatedAt = updatedAt;
+	}
 
 	@Builder
 	public Product(String name, int price, String brandName, String model, String color) {
@@ -37,7 +53,7 @@ public class Product {
 	/** 생산품 고유 아이디 */
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private String id;
+	private Long id;
 
 	/** 생산품 명 */
 	@Column(name = "product_name")
@@ -45,6 +61,14 @@ public class Product {
 	
 	/** 생산품 가격 */
 	private int price;
+	
+	/**
+	 * 가격을 바꾼다.
+	 * @param price
+	 */
+	public void changePrice(int price) {
+		this.price = price;
+	}
 	
 	/** 브랜드 명 */
 	@Column(name = "brand_name")
@@ -73,5 +97,5 @@ public class Product {
     protected void onUpdatedAt() {
     	updatedAt = LocalDateTime.now();
     }
-	
+    
 }
