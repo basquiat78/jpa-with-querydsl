@@ -772,3 +772,5 @@ P.S 잘 안되면 issue에 남겨주세요.
 [JOIN](https://github.com/basquiat78/jpa-with-querydsl/tree/5.query-dsl-join-and-aggregation)     
 
 [GROUP BY](https://github.com/basquiat78/jpa-with-querydsl/tree/6.query-dsl-groupby-aggregation)    
+
+[Projections](https://github.com/basquiat78/jpa-with-querydsl/tree/7.query-dsl-projections)    
