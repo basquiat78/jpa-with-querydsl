@@ -774,3 +774,54 @@ P.S 잘 안되면 issue에 남겨주세요.
 [GROUP BY](https://github.com/basquiat78/jpa-with-querydsl/tree/6.query-dsl-groupby-aggregation)    
 
 [Projections](https://github.com/basquiat78/jpa-with-querydsl/tree/7.query-dsl-projections)    
+
+# WINDOW10 With STS3 MAVEN apt-maven-plugin     
+
+맥에서는 이런 문제가 발생하지 않는데 윈도우10과 관련해서는 이런 오류가 있다는 피드백을 받았다. 
+
+그래서 집에 있는 윈도우에서 클론을 받았더니 진짜 에러가 발생했다.
+
+pom.xml에 <execution>에 에러가 뜬다!!!!!.     
+
+테스트해본 결과 작동은 잘되는데 엔티티가 바뀔 때마다 자동으로 젠을 하는 기능이 막히게 되는 문제이다.     
+
+이것은
+ 
+```
+You need to run build with JDK or have tools.jar on the classpath.If this occures during eclipse build make sure you run eclipse under JDK as well (com.mysema.maven:apt-maven-plugin:1.1.3:process:default:generate-sources)
+```
+다음과 같은 에러가 발생한다. 
+
+해결 방법은 보통 윈도우에서 STS3를 깔면  'sts-3.9.7.RELEASE'폴더 밑으로 관련 파일들이 들어있는데 
+
+![실행이미지](https://github.com/basquiat78/jpa-with-querydsl/blob/master/capture/capture5.png)    
+
+이미지에서 맨 밑에 STS.ini파일을 열어서 다음과 같이 추가하면 된다.    
+
+```
+-startup
+plugins/org.eclipse.equinox.launcher_1.5.200.v20180922-1751.jar
+// 추가되는 부분
+-vm
+C:/Program Files/ojdkbuild/java-1.8.0-openjdk-1.8.0.252-2/bin/javaw.exe
+// 추가되는 부분
+--launcher.library
+plugins/org.eclipse.equinox.launcher.win32.win32.x86_64_1.1.900.v20180922-1751
+-product
+org.springsource.sts.ide
+--launcher.defaultAction
+openFile
+-vmargs
+-Dosgi.requiredJavaVersion=1.8
+--add-modules=ALL-SYSTEM
+-Xms40m
+-Dosgi.module.lock.timeout=10
+-Dorg.eclipse.swt.browser.IEVersion=10001
+-Xmx1200m
+-javaagent:C:\Users\basquiat\Documents\sts\sts-3.9.7.RELEASE\lombok.jar
+```
+재시작 하면 사라진다.
+
+![실행이미지](https://github.com/basquiat78/jpa-with-querydsl/blob/master/capture/DEEPBBAK.jpg)    
+
+queryDSL과 관련된 내용이 끝나면 SpringBoot와 연계할 때는 인텔리제이와 그래들로 진행할 것이다.     
