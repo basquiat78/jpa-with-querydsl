@@ -26,7 +26,7 @@ import lombok.ToString;
 @ToString
 public class Product {
 	
-	//@QueryProjection
+	@QueryProjection
 	public Product(Long id, String name, int price, String brandName, String model, String color,
 			LocalDateTime createdAt, LocalDateTime updatedAt) {
 		super();

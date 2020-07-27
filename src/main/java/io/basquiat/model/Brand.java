@@ -80,5 +80,5 @@ public class Brand {
     protected void onUpdatedAt() {
     	updatedAt = LocalDateTime.now();
     }
-
+    
 }
