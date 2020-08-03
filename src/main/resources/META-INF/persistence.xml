@@ -16,8 +16,8 @@
             <property name="javax.persistence.jdbc.user" value="basquiat"/>
             <property name="javax.persistence.jdbc.password" value="basquiat"/>
             <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/basquiat?rewriteBatchedStatements=true&amp;useUnicode=yes&amp;characterEncoding=UTF-8&amp;serverTimezone=Asia/Seoul"/>
-            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL5InnoDBDialect"/>
-            
+            <!-- <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL5InnoDBDialect"/>  -->
+            <property name="hibernate.dialect" value="io.basquiat.model.CustomMySqlDialect"/>
             <!-- option configuration -->
             <!-- 콘솔에 sql 날아가는거 보여주는 옵션 -->
             <property name="hibernate.show_sql" value="true"/>

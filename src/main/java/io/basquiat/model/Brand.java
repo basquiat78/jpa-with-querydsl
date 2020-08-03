@@ -48,6 +48,10 @@ public class Brand {
 	@Column(name = "br_name")
 	private String name;
 
+	public void changeBrandName(String name) {
+		this.name = name;
+	}
+	
 	/** 브랜드 영문 명 */
 	@Column(name = "br_en_name")
 	private String enName;

@@ -10,9 +10,9 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
 
-import com.querydsl.core.Tuple;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
+import io.basquiat.model.Brand;
 import io.basquiat.model.Partner;
 
 /**
@@ -30,40 +30,20 @@ public class JpaMain {
         try {
         	JPAQueryFactory query = new JPAQueryFactory(em);
         	System.out.println("queryDSL로 뭔가 하기 직전!!!");
-
-        	String brandCode = "FENDER";
-        	String enName = "Fender";
-        	String name = "펜더";
-        	String partnerId = "RIDINBASS";
-        	String partnerName = "라이딩 베이스";
         	
-        	List<Tuple> brandList = query.select(
-        										 brand.name, 
-        										 brand.enName, 
-        										 //Expressions.constant(100),
-        										 //ExpressionUtils.as(Expressions.constant(500), "constant"),
-        										 brand.constant(100),
-        										 brand.constant(500, "constant")
-        										 )
-        								 .from(brand)
-										 .where(
-													 //brand.codeEq(brandCode)
-													 //brand.nameEq(name),
-													 //brand.enNameEq(enName)
-													 //brand.enNameAndNameEq(enName, name)
-													 brand.enNameOrNameEq(enName, name)
-												  )
-										  .fetch();
-        	System.out.println(brandList.toString());
-        	List<Partner> partnerList = query.selectFrom(partner)
-        								 	 .where(
-	        										 //partner.idEq(partnerId)
-	        										 //partner.nameEq(partnerName)
-	        										 //partner.idAndNameEq(partnerId, partnerName)
-	        										 partner.idOrNameEq(partnerId, partnerName)
-	        										)
-        								 	 .fetch();
-        	System.out.println(partnerList.toString());
+        	long goodbyeBrand = query.delete(brand)
+        					   		 .execute();
+        	
+        	long goodbyePartner = query.delete(partner)
+			   		 				 .execute();
+        	
+        	System.out.println(goodbyeBrand);
+        	System.out.println(goodbyePartner);
+        		
+        	List<Brand> brandList = query.selectFrom(brand).fetch();
+        	List<Partner> partnerList = query.selectFrom(partner).fetch();
+        	System.out.println(brandList);
+        	System.out.println(partnerList);
         	tx.commit();
         } catch(Exception e) {
         	e.printStackTrace();
