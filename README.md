@@ -777,6 +777,8 @@ P.S 잘 안되면 issue에 남겨주세요.
 
 [Dynamic Query](https://github.com/basquiat78/jpa-with-querydsl/tree/8.query-dsl-complex-predicates)     
 
+[마지막 브랜치: SQL Function And bulk](https://github.com/basquiat78/jpa-with-querydsl/tree/9.query-dsl-sql-function-bulk)
+
 # WINDOW10 With STS3 MAVEN apt-maven-plugin     
 
 맥에서는 이런 문제가 발생하지 않는데 윈도우10과 관련해서는 이런 오류가 있다는 피드백을 받았다. 
